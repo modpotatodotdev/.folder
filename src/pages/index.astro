@@ -1,0 +1,24 @@
+---
+import Layout from "../layouts/Layout.astro";
+import RegistryApp from "../components/RegistryApp";
+import { getSessionCookie, validateSession } from "../lib/auth";
+
+let isLoggedIn = false;
+
+try {
+  const runtime = Astro.locals.runtime;
+  if (runtime?.env?.DB) {
+    const sessionId = getSessionCookie(Astro.request);
+    if (sessionId) {
+      const user = await validateSession(runtime.env.DB, sessionId);
+      isLoggedIn = !!user;
+    }
+  }
+} catch {
+  // No runtime (build time)
+}
+---
+
+<Layout>
+  <RegistryApp client:load isLoggedIn={isLoggedIn} />
+</Layout>

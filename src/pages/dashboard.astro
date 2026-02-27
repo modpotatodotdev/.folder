@@ -1,0 +1,59 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { getSessionCookie, validateSession } from "../lib/auth";
+import { getUserNamespaces } from "../lib/db";
+
+let user: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null = null;
+let namespaces: { slug: string; project_name: string; project_type: string; description: string | null; created_at: string }[] = [];
+
+try {
+  const runtime = Astro.locals.runtime;
+  if (runtime?.env?.DB) {
+    const sessionId = getSessionCookie(Astro.request);
+    if (sessionId) {
+      user = await validateSession(runtime.env.DB, sessionId);
+      if (user) {
+        namespaces = await getUserNamespaces(runtime.env.DB, user.id);
+      }
+    }
+  }
+} catch {
+  // No runtime
+}
+
+if (!user) {
+  return Astro.redirect("/");
+}
+---
+
+<Layout title="dashboard — dotfolder">
+  <div class="dashboard-page">
+    <div class="dash-title">your namespaces</div>
+    <div class="dash-sub">
+      signed in as <strong>@{user.username}</strong> ·
+      <form method="POST" action="/api/auth/logout" style="display:inline">
+        <button type="submit" style="background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:0.74rem;cursor:pointer;text-decoration:underline;">sign out</button>
+      </form>
+    </div>
+
+    {namespaces.length === 0 ? (
+      <div class="dash-empty">
+        <p>You haven't claimed any namespaces yet.</p>
+        <p style="margin-top:0.5rem"><a href="/" style="color:var(--text)">← search and claim one</a></p>
+      </div>
+    ) : (
+      <div class="dash-ns-list">
+        {namespaces.map((ns) => (
+          <div class="dash-ns-card">
+            <div class="dash-ns-top">
+              <div class="dash-ns-name">{ns.project_name}</div>
+              <span class="pc-badge">{ns.project_type}</span>
+            </div>
+            <div class="dash-ns-slug">.dotfolder/{ns.slug}/</div>
+            {ns.description && <div class="dash-ns-desc">{ns.description}</div>}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</Layout>
