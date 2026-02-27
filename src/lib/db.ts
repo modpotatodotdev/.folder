@@ -43,6 +43,17 @@ export async function lookupNamespace(
   return { ...ns, urls: urls.results };
 }
 
+export async function namespaceExists(
+  db: D1Database,
+  slug: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT 1 FROM namespaces WHERE slug = ?")
+    .bind(slug)
+    .first();
+  return row !== null;
+}
+
 export async function claimNamespace(
   db: D1Database,
   slug: string,
@@ -147,20 +158,33 @@ export async function searchNamespaces(
     .bind(pattern, pattern, pattern, limit)
     .all<Namespace>();
 
-  const namespaces: (Namespace & { urls: NamespaceUrl[] })[] = [];
-  for (const ns of result.results) {
-    const urls = await db
-      .prepare("SELECT * FROM namespace_urls WHERE namespace_id = ? ORDER BY github_stars DESC, created_at ASC")
-      .bind(ns.id)
-      .all<NamespaceUrl>();
-    namespaces.push({ ...ns, urls: urls.results });
+  if (result.results.length === 0) return [];
+
+  const ids = result.results.map((ns) => ns.id);
+  const placeholders = ids.map(() => "?").join(",");
+  const urlResult = await db
+    .prepare(
+      `SELECT * FROM namespace_urls WHERE namespace_id IN (${placeholders}) ORDER BY github_stars DESC, created_at ASC`,
+    )
+    .bind(...ids)
+    .all<NamespaceUrl>();
+
+  const urlMap = new Map<string, NamespaceUrl[]>();
+  for (const url of urlResult.results) {
+    const list = urlMap.get(url.namespace_id) || [];
+    list.push(url);
+    urlMap.set(url.namespace_id, list);
   }
 
-  return namespaces;
+  return result.results.map((ns) => ({
+    ...ns,
+    urls: urlMap.get(ns.id) || [],
+  }));
 }
 
 export function isValidSlug(slug: string): boolean {
-  return /^[a-zA-Z0-9_\-.]{1,64}$/.test(slug);
+  if (!slug || slug === "." || slug === "..") return false;
+  return /^[a-zA-Z0-9][a-zA-Z0-9_\-.]{0,63}$/.test(slug);
 }
 
 export function isValidHttpUrl(value: string): boolean {

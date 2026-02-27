@@ -19,6 +19,7 @@ import {
   getNamespaceCount,
   getUserNamespaces,
   searchNamespaces,
+  namespaceExists,
   isValidSlug,
   isValidHttpUrl,
 } from "./db";
@@ -34,6 +35,8 @@ type Bindings = {
 type D1Database = import("@cloudflare/workers-types").D1Database;
 
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
+
+const MAX_SEARCH_QUERY_LENGTH = 100;
 
 async function fetchGitHubStars(url: string, token?: string): Promise<number> {
   try {
@@ -58,6 +61,11 @@ app.use("*", async (c, next) => {
   await next();
   c.res.headers.set("X-Content-Type-Options", "nosniff");
   c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.res.headers.set("X-Frame-Options", "DENY");
+  c.res.headers.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://avatars.githubusercontent.com; connect-src 'self'; frame-ancestors 'none'",
+  );
 });
 
 // ── Auth: start GitHub OAuth ──
@@ -110,14 +118,14 @@ app.get("/auth/github/callback", async (c) => {
     }),
   });
 
+  if (!tokenRes.ok) {
+    return redirectWithStateCleared("/?error=token_request_failed");
+  }
   const tokenData = (await tokenRes.json()) as {
     access_token?: string;
     error?: string;
   };
-  if (!tokenRes.ok) {
-    return redirectWithStateCleared("/?error=token_request_failed");
-  }
-  if (!tokenData.access_token) {
+  if (tokenData.error || !tokenData.access_token) {
     return redirectWithStateCleared("/?error=token_missing");
   }
 
@@ -129,15 +137,15 @@ app.get("/auth/github/callback", async (c) => {
     },
   });
 
+  if (!userRes.ok) {
+    return redirectWithStateCleared("/?error=user_request_failed");
+  }
   const ghUser = (await userRes.json()) as {
     id: number;
     login: string;
     name: string | null;
     avatar_url: string;
   };
-  if (!userRes.ok) {
-    return redirectWithStateCleared("/?error=user_request_failed");
-  }
   if (!ghUser.id || !ghUser.login) {
     return redirectWithStateCleared("/?error=user_data_incomplete");
   }
@@ -237,12 +245,21 @@ app.post("/namespaces", async (c) => {
   if (!isValidSlug(body.slug)) {
     return c.json({ error: "Invalid namespace slug" }, 400);
   }
+  if (body.project_name.length > 100) {
+    return c.json({ error: "Project name must be 100 characters or fewer" }, 400);
+  }
+  if (body.url.length > 2048) {
+    return c.json({ error: "URL must be 2048 characters or fewer" }, 400);
+  }
+  if (body.description && body.description.length > 500) {
+    return c.json({ error: "Description must be 500 characters or fewer" }, 400);
+  }
   if (!isValidHttpUrl(body.url)) {
     return c.json({ error: "Invalid URL" }, 400);
   }
 
   // Check if already taken
-  const existing = await lookupNamespace(c.env.DB, body.slug);
+  const existing = await namespaceExists(c.env.DB, body.slug);
   if (existing) {
     return c.json({ error: "Namespace already claimed" }, 409);
   }
@@ -283,6 +300,9 @@ app.post("/namespaces/:slug/urls", async (c) => {
   if (!body.url) {
     return c.json({ error: "Missing required field: url" }, 400);
   }
+  if (body.url.length > 2048) {
+    return c.json({ error: "URL must be 2048 characters or fewer" }, 400);
+  }
   if (!isValidHttpUrl(body.url)) {
     return c.json({ error: "Invalid URL" }, 400);
   }
@@ -297,7 +317,8 @@ app.get("/search", async (c) => {
   if (!q || q.trim().length === 0) {
     return c.json({ results: [] });
   }
-  const results = await searchNamespaces(c.env.DB, q.trim());
+  const trimmed = q.trim().slice(0, MAX_SEARCH_QUERY_LENGTH);
+  const results = await searchNamespaces(c.env.DB, trimmed);
   return c.json({ results });
 });
 

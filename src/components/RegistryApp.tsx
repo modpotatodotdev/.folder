@@ -347,11 +347,11 @@ export default function RegistryApp({ isLoggedIn }: Props) {
           <div className="stats">
             {namespaceCount !== null && (
               <div className="stat">
-                <b>{namespaceCount.toLocaleString()}</b>registered
+                <b>{namespaceCount.toLocaleString()}</b> registered
               </div>
             )}
             <div className="stat">
-              <b>cli · mcp · app · sdk</b>types
+              <b>cli · mcp · app · sdk</b> types
             </div>
           </div>
         </div>
