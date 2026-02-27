@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 
 interface NamespaceData {
   slug: string;
@@ -486,9 +486,9 @@ function ResultView({
               <div className="url-list-label">
                 {ns.urls.length} {ns.urls.length === 1 ? "project" : "projects"} registered
               </div>
-              {ns.urls.map((u, i) => (
+              {ns.urls.map((u) => (
                 <a
-                  key={i}
+                  key={u.url}
                   href={u.url}
                   className="url-item"
                   target="_blank"

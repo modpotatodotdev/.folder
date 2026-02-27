@@ -133,12 +133,13 @@ export async function searchNamespaces(
   query: string,
   limit = 20,
 ): Promise<(Namespace & { urls: NamespaceUrl[] })[]> {
-  const pattern = `%${query}%`;
+  const escaped = query.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+  const pattern = `%${escaped}%`;
   const result = await db
     .prepare(
       `SELECT n.*, u.username as owner_username
        FROM namespaces n JOIN users u ON n.owner_id = u.id
-       WHERE n.slug LIKE ? OR n.project_name LIKE ? OR n.description LIKE ?
+       WHERE n.slug LIKE ? ESCAPE '\\' OR n.project_name LIKE ? ESCAPE '\\' OR n.description LIKE ? ESCAPE '\\'
        ORDER BY n.created_at DESC LIMIT ?`,
     )
     .bind(pattern, pattern, pattern, limit)
