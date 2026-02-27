@@ -16,6 +16,7 @@ export interface NamespaceUrl {
   namespace_id: string;
   url: string;
   submitted_by: string;
+  github_stars: number;
   created_at: string;
 }
 
@@ -35,7 +36,7 @@ export async function lookupNamespace(
   if (!ns) return null;
 
   const urls = await db
-    .prepare("SELECT * FROM namespace_urls WHERE namespace_id = ? ORDER BY created_at ASC")
+    .prepare("SELECT * FROM namespace_urls WHERE namespace_id = ? ORDER BY github_stars DESC, created_at ASC")
     .bind(ns.id)
     .all<NamespaceUrl>();
 
@@ -125,6 +126,35 @@ export async function getUserNamespaces(
     .all<Namespace>();
 
   return result.results;
+}
+
+export async function searchNamespaces(
+  db: D1Database,
+  query: string,
+  limit = 20,
+): Promise<(Namespace & { urls: NamespaceUrl[] })[]> {
+  const escaped = query.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+  const pattern = `%${escaped}%`;
+  const result = await db
+    .prepare(
+      `SELECT n.*, u.username as owner_username
+       FROM namespaces n JOIN users u ON n.owner_id = u.id
+       WHERE n.slug LIKE ? ESCAPE '\\' OR n.project_name LIKE ? ESCAPE '\\' OR n.description LIKE ? ESCAPE '\\'
+       ORDER BY n.created_at DESC LIMIT ?`,
+    )
+    .bind(pattern, pattern, pattern, limit)
+    .all<Namespace>();
+
+  const namespaces: (Namespace & { urls: NamespaceUrl[] })[] = [];
+  for (const ns of result.results) {
+    const urls = await db
+      .prepare("SELECT * FROM namespace_urls WHERE namespace_id = ? ORDER BY github_stars DESC, created_at ASC")
+      .bind(ns.id)
+      .all<NamespaceUrl>();
+    namespaces.push({ ...ns, urls: urls.results });
+  }
+
+  return namespaces;
 }
 
 export function isValidSlug(slug: string): boolean {

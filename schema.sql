@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS namespace_urls (
   namespace_id TEXT NOT NULL REFERENCES namespaces(id) ON DELETE CASCADE,
   url TEXT NOT NULL,
   submitted_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  github_stars INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

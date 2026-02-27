@@ -18,6 +18,7 @@ import {
   getRecentNamespaces,
   getNamespaceCount,
   getUserNamespaces,
+  searchNamespaces,
   isValidSlug,
   isValidHttpUrl,
 } from "./db";
@@ -267,6 +268,16 @@ app.post("/namespaces/:slug/urls", async (c) => {
 
   await addNamespaceUrl(c.env.DB, ns.id, body.url, user.id);
   return c.json({ success: true }, 201);
+});
+
+// ── Namespace: search ──
+app.get("/search", async (c) => {
+  const q = c.req.query("q");
+  if (!q || q.trim().length === 0) {
+    return c.json({ results: [] });
+  }
+  const results = await searchNamespaces(c.env.DB, q.trim());
+  return c.json({ results });
 });
 
 // ── Namespace: list recent ──
