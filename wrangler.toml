@@ -1,0 +1,8 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "dotfolder"
+compatibility_date = "2025-04-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dotfolder-db"
+database_id = "placeholder-replace-with-real-id"
