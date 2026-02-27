@@ -23,7 +23,7 @@ There are two ways to run the app locally:
 - Supported for quick UI changes.
 - Uses `platformProxy` to bind local D1 and other Cloudflare features.
 
-### Local Staging / Simulation (`npm run staging`)
+### Local Staging / Simulation (`npm r  un staging`)
 - Builds the app and runs it via `wrangler dev`.
 - Uses `workerd` (the real Workers runtime).
 - More accurate for testing Cloudflare-specific logic and headers.
