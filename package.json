@@ -8,20 +8,25 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "db:migrate": "wrangler d1 execute dotfolder-db --local --file=schema.sql"
+    "db:migrate": "wrangler d1 execute dotfolder-db --local --file=schema.sql",
+    "staging": "npm run build && wrangler dev --env staging --assets ./dist --script ./dist/_worker.js/index.js"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.6",
-    "@astrojs/react": "^4.2.1",
+    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/react": "3.6.3",
     "astro": "^5.15.8",
     "hono": "^4.11.4",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "@types/react": "^19.1.4",
-    "@types/react-dom": "^19.1.5",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7",
     "typescript": "^5.8.3",
-    "wrangler": "^4.16.0"
+    "wrangler": "^4.69.0"
+  },
+  "overrides": {
+    "wrangler": "^4.69.0",
+    "undici": "^7.18.2"
   }
 }
