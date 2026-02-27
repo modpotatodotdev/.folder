@@ -8,6 +8,8 @@ export function generateId(): string {
 
 const SESSION_COOKIE = "dotfolder_session";
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
+const OAUTH_STATE_COOKIE = "dotfolder_oauth_state";
+const OAUTH_STATE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
 
 export async function createSession(
   db: D1Database,
@@ -67,12 +69,16 @@ export async function deleteSession(
   await db.prepare("DELETE FROM sessions WHERE id = ?").bind(sessionId).run();
 }
 
+function getCookie(request: Request, name: string): string | undefined {
+  const cookies = request.headers.get("cookie") || "";
+  const match = cookies.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+  return match ? match[1] : undefined;
+}
+
 export function getSessionCookie(
   request: Request,
 ): string | undefined {
-  const cookies = request.headers.get("cookie") || "";
-  const match = cookies.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]*)`));
-  return match ? match[1] : undefined;
+  return getCookie(request, SESSION_COOKIE);
 }
 
 export function setSessionCookieHeader(sessionId: string): string {
@@ -84,6 +90,19 @@ export function clearSessionCookieHeader(): string {
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0`;
 }
 
+export function getOAuthStateCookie(request: Request): string | undefined {
+  return getCookie(request, OAUTH_STATE_COOKIE);
+}
+
+export function setOAuthStateCookieHeader(state: string): string {
+  const maxAge = OAUTH_STATE_MAX_AGE / 1000;
+  return `${OAUTH_STATE_COOKIE}=${state}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${maxAge}`;
+}
+
+export function clearOAuthStateCookieHeader(): string {
+  return `${OAUTH_STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=0`;
+}
+
 export async function findOrCreateUser(
   db: D1Database,
   provider: string,
@@ -91,7 +110,6 @@ export async function findOrCreateUser(
   username: string,
   displayName: string | null,
   avatarUrl: string | null,
-  accessToken: string,
 ): Promise<string> {
   // Check if OAuth account already exists
   const existing = await db
@@ -102,13 +120,6 @@ export async function findOrCreateUser(
     .first<{ user_id: string }>();
 
   if (existing) {
-    // Update the access token
-    await db
-      .prepare(
-        "UPDATE oauth_accounts SET access_token = ? WHERE provider = ? AND provider_user_id = ?",
-      )
-      .bind(accessToken, provider, providerUserId)
-      .run();
     // Update user info
     await db
       .prepare(
@@ -131,7 +142,7 @@ export async function findOrCreateUser(
       .prepare(
         "INSERT INTO oauth_accounts (provider, provider_user_id, user_id, access_token) VALUES (?, ?, ?, ?)",
       )
-      .bind(provider, providerUserId, userId, accessToken),
+      .bind(provider, providerUserId, userId, null),
   ]);
   return userId;
 }

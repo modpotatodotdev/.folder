@@ -7,6 +7,9 @@ import {
   setSessionCookieHeader,
   clearSessionCookieHeader,
   deleteSession,
+  getOAuthStateCookie,
+  setOAuthStateCookieHeader,
+  clearOAuthStateCookieHeader,
 } from "./auth";
 import {
   lookupNamespace,
@@ -16,6 +19,7 @@ import {
   getNamespaceCount,
   getUserNamespaces,
   isValidSlug,
+  isValidHttpUrl,
 } from "./db";
 
 type Bindings = {
@@ -29,20 +33,46 @@ type D1Database = import("@cloudflare/workers-types").D1Database;
 
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
+app.use("*", async (c, next) => {
+  await next();
+  c.res.headers.set("X-Content-Type-Options", "nosniff");
+  c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+});
+
 // ── Auth: start GitHub OAuth ──
 app.get("/auth/github", (c) => {
   const clientId = c.env.GITHUB_CLIENT_ID;
   const redirectUri = new URL("/api/auth/github/callback", c.req.url).toString();
   const state = crypto.randomUUID();
   const url = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user%20user:email&state=${state}`;
-  return c.redirect(url);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: url,
+      "Set-Cookie": setOAuthStateCookieHeader(state),
+    },
+  });
 });
 
 // ── Auth: GitHub OAuth callback ──
 app.get("/auth/github/callback", async (c) => {
+  const redirectWithStateCleared = (location: string) =>
+    new Response(null, {
+      status: 302,
+      headers: {
+        Location: location,
+        "Set-Cookie": clearOAuthStateCookieHeader(),
+      },
+    });
+
   const code = c.req.query("code");
+  const state = c.req.query("state");
+  const stateCookie = getOAuthStateCookie(c.req.raw);
   if (!code) {
-    return c.redirect("/?error=missing_code");
+    return redirectWithStateCleared("/?error=missing_code");
+  }
+  if (!state || !stateCookie || state !== stateCookie) {
+    return redirectWithStateCleared("/?error=invalid_state");
   }
 
   // Exchange code for access token
@@ -63,8 +93,11 @@ app.get("/auth/github/callback", async (c) => {
     access_token?: string;
     error?: string;
   };
+  if (!tokenRes.ok) {
+    return redirectWithStateCleared("/?error=token_request_failed");
+  }
   if (!tokenData.access_token) {
-    return c.redirect("/?error=token_exchange_failed");
+    return redirectWithStateCleared("/?error=token_missing");
   }
 
   // Fetch GitHub user profile
@@ -81,6 +114,12 @@ app.get("/auth/github/callback", async (c) => {
     name: string | null;
     avatar_url: string;
   };
+  if (!userRes.ok) {
+    return redirectWithStateCleared("/?error=user_request_failed");
+  }
+  if (!ghUser.id || !ghUser.login) {
+    return redirectWithStateCleared("/?error=user_data_incomplete");
+  }
 
   // Find or create user
   const userId = await findOrCreateUser(
@@ -90,18 +129,19 @@ app.get("/auth/github/callback", async (c) => {
     ghUser.login,
     ghUser.name,
     ghUser.avatar_url,
-    tokenData.access_token,
   );
 
   // Create session
   const sessionId = await createSession(c.env.DB, userId);
 
+  const headers = new Headers();
+  headers.set("Location", "/");
+  headers.append("Set-Cookie", setSessionCookieHeader(sessionId));
+  headers.append("Set-Cookie", clearOAuthStateCookieHeader());
+
   return new Response(null, {
     status: 302,
-    headers: {
-      Location: "/",
-      "Set-Cookie": setSessionCookieHeader(sessionId),
-    },
+    headers,
   });
 });
 
@@ -176,6 +216,9 @@ app.post("/namespaces", async (c) => {
   if (!isValidSlug(body.slug)) {
     return c.json({ error: "Invalid namespace slug" }, 400);
   }
+  if (!isValidHttpUrl(body.url)) {
+    return c.json({ error: "Invalid URL" }, 400);
+  }
 
   // Check if already taken
   const existing = await lookupNamespace(c.env.DB, body.slug);
@@ -217,6 +260,9 @@ app.post("/namespaces/:slug/urls", async (c) => {
   const body = await c.req.json<{ url: string }>();
   if (!body.url) {
     return c.json({ error: "Missing required field: url" }, 400);
+  }
+  if (!isValidHttpUrl(body.url)) {
+    return c.json({ error: "Invalid URL" }, 400);
   }
 
   await addNamespaceUrl(c.env.DB, ns.id, body.url, user.id);
