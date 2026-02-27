@@ -28,11 +28,31 @@ type Bindings = {
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   SESSION_SECRET: string;
+  GITHUB_TOKEN?: string;
 };
 
 type D1Database = import("@cloudflare/workers-types").D1Database;
 
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
+
+async function fetchGitHubStars(url: string, token?: string): Promise<number> {
+  try {
+    const match = url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/?#]+)/);
+    if (!match) return 0;
+    const [, owner, repo] = match;
+    const headers: Record<string, string> = {
+      "User-Agent": "dotfolder-app",
+      Accept: "application/vnd.github+json",
+    };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo.replace(/\.git$/, "")}`, { headers });
+    if (!res.ok) return 0;
+    const data = (await res.json()) as { stargazers_count?: number };
+    return data.stargazers_count ?? 0;
+  } catch {
+    return 0;
+  }
+}
 
 app.use("*", async (c, next) => {
   await next();
@@ -235,6 +255,7 @@ app.post("/namespaces", async (c) => {
     body.description || null,
     user.id,
     body.url,
+    await fetchGitHubStars(body.url, c.env.GITHUB_TOKEN),
   );
 
   return c.json({ success: true, id: result.id }, 201);
@@ -266,7 +287,7 @@ app.post("/namespaces/:slug/urls", async (c) => {
     return c.json({ error: "Invalid URL" }, 400);
   }
 
-  await addNamespaceUrl(c.env.DB, ns.id, body.url, user.id);
+  await addNamespaceUrl(c.env.DB, ns.id, body.url, user.id, await fetchGitHubStars(body.url, c.env.GITHUB_TOKEN));
   return c.json({ success: true }, 201);
 });
 

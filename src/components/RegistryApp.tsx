@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 interface NamespaceData {
   slug: string;
@@ -47,6 +47,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
   const [view, setView] = useState<"result" | "form" | "success">("result");
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [namespaceCount, setNamespaceCount] = useState<number | null>(null);
 
   // Form state
   const [formType, setFormType] = useState<string | null>(null);
@@ -68,6 +69,15 @@ export default function RegistryApp({ isLoggedIn }: Props) {
   const [addUrlSubmitting, setAddUrlSubmitting] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/namespaces")
+      .then((r) => r.json())
+      .then((d: { total?: number }) => {
+        if (typeof d.total === "number") setNamespaceCount(d.total);
+      })
+      .catch((err) => console.error("Failed to fetch namespace count", err));
+  }, []);
 
   const slug = cleanSlug(query);
 
@@ -252,9 +262,8 @@ export default function RegistryApp({ isLoggedIn }: Props) {
           </h1>
 
           <p className="hero-sub">
-            Apps, CLIs, MCPs, plugins, and SDKs claim a subdirectory under{" "}
-            <code>.dotfolder/</code> to persist repo-level state without stomping on
-            each other. Look up a namespace before you ship.
+            Namespace registry for <code>.dotfolder/</code> — look up and
+            claim a directory name before your tool ships.
           </p>
 
           <div className="search-area">
@@ -336,9 +345,11 @@ export default function RegistryApp({ isLoggedIn }: Props) {
           )}
 
           <div className="stats">
-            <div className="stat">
-              <b>∞</b>possible
-            </div>
+            {namespaceCount !== null && (
+              <div className="stat">
+                <b>{namespaceCount.toLocaleString()}</b>registered
+              </div>
+            )}
             <div className="stat">
               <b>cli · mcp · app · sdk</b>types
             </div>
@@ -566,8 +577,6 @@ function ResultView({
             <p>
               Nothing is registered under{" "}
               <strong>.dotfolder/{result.slug}/</strong> yet.
-              <br />
-              Claim it before someone else does.
             </p>
           </div>
           <button className="btn btn-primary" onClick={onClaim}>
