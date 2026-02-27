@@ -134,7 +134,11 @@ export function isValidSlug(slug: string): boolean {
 export function isValidHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:";
+    if (url.protocol === "https:") return true;
+    if (url.protocol === "http:") {
+      return url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    }
+    return false;
   } catch {
     return false;
   }
