@@ -93,8 +93,11 @@ app.get("/auth/github/callback", async (c) => {
     access_token?: string;
     error?: string;
   };
-  if (!tokenRes.ok || !tokenData.access_token) {
-    return redirectWithStateCleared("/?error=token_exchange_failed");
+  if (!tokenRes.ok) {
+    return redirectWithStateCleared("/?error=token_request_failed");
+  }
+  if (!tokenData.access_token) {
+    return redirectWithStateCleared("/?error=token_missing");
   }
 
   // Fetch GitHub user profile
@@ -111,8 +114,11 @@ app.get("/auth/github/callback", async (c) => {
     name: string | null;
     avatar_url: string;
   };
-  if (!userRes.ok || !ghUser.id || !ghUser.login) {
-    return redirectWithStateCleared("/?error=user_fetch_failed");
+  if (!userRes.ok) {
+    return redirectWithStateCleared("/?error=user_request_failed");
+  }
+  if (!ghUser.id || !ghUser.login) {
+    return redirectWithStateCleared("/?error=user_data_incomplete");
   }
 
   // Find or create user
