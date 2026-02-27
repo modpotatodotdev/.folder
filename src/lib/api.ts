@@ -36,6 +36,8 @@ type D1Database = import("@cloudflare/workers-types").D1Database;
 
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
+const MAX_SEARCH_QUERY_LENGTH = 100;
+
 async function fetchGitHubStars(url: string, token?: string): Promise<number> {
   try {
     const match = url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/?#]+)/);
@@ -315,7 +317,7 @@ app.get("/search", async (c) => {
   if (!q || q.trim().length === 0) {
     return c.json({ results: [] });
   }
-  const trimmed = q.trim().slice(0, 100);
+  const trimmed = q.trim().slice(0, MAX_SEARCH_QUERY_LENGTH);
   const results = await searchNamespaces(c.env.DB, trimmed);
   return c.json({ results });
 });
