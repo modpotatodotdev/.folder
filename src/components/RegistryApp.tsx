@@ -7,7 +7,17 @@ interface NamespaceData {
   description: string | null;
   owner_username?: string;
   created_at: string;
-  urls: { url: string; submitted_by: string }[];
+  urls: { url: string; submitted_by: string; github_stars: number }[];
+}
+
+interface SearchResult {
+  slug: string;
+  project_name: string;
+  project_type: string;
+  description: string | null;
+  owner_username?: string;
+  created_at: string;
+  urls: { url: string; submitted_by: string; github_stars: number }[];
 }
 
 interface LookupResult {
@@ -46,6 +56,17 @@ export default function RegistryApp({ isLoggedIn }: Props) {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Search results state
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // Add URL to existing namespace
+  const [addUrlMode, setAddUrlMode] = useState(false);
+  const [addUrlValue, setAddUrlValue] = useState("");
+  const [addUrlError, setAddUrlError] = useState<string | null>(null);
+  const [addUrlSubmitting, setAddUrlSubmitting] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const slug = cleanSlug(query);
@@ -54,16 +75,25 @@ export default function RegistryApp({ isLoggedIn }: Props) {
     const s = cleanSlug(query);
     if (!s) return;
     setLoading(true);
+    setSearchLoading(true);
+    setHasSearched(true);
     try {
-      const res = await fetch(`/api/namespaces/${encodeURIComponent(s)}`);
-      const data: LookupResult = await res.json();
-      setLookupResult(data);
+      const [lookupRes, searchRes] = await Promise.all([
+        fetch(`/api/namespaces/${encodeURIComponent(s)}`),
+        fetch(`/api/search?q=${encodeURIComponent(s)}`),
+      ]);
+      const lookupData: LookupResult = await lookupRes.json();
+      const searchData: { results: SearchResult[] } = await searchRes.json();
+      setLookupResult(lookupData);
+      // Filter out the exact match from search results
+      setSearchResults(searchData.results.filter((r) => r.slug !== s));
       setView("result");
       setOverlayOpen(true);
     } catch {
       showToast("Failed to look up namespace");
     } finally {
       setLoading(false);
+      setSearchLoading(false);
     }
   }, [query]);
 
@@ -79,6 +109,58 @@ export default function RegistryApp({ isLoggedIn }: Props) {
     setFormError(null);
     setView("form");
   }, [isLoggedIn]);
+
+  const openAddUrl = useCallback(() => {
+    if (!isLoggedIn) {
+      window.location.href = "/api/auth/github";
+      return;
+    }
+    setAddUrlMode(true);
+    setAddUrlValue("");
+    setAddUrlError(null);
+  }, [isLoggedIn]);
+
+  const submitAddUrl = useCallback(async () => {
+    if (!addUrlValue.trim()) {
+      setAddUrlError("URL is required");
+      return;
+    }
+    if (!lookupResult?.slug) return;
+
+    setAddUrlSubmitting(true);
+    setAddUrlError(null);
+
+    try {
+      const res = await fetch(`/api/namespaces/${encodeURIComponent(lookupResult.slug)}/urls`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: addUrlValue.trim() }),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/api/auth/github";
+        return;
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        setAddUrlError((data as { error: string }).error || "Failed to add URL");
+        return;
+      }
+
+      // Refresh the namespace data
+      const refreshRes = await fetch(`/api/namespaces/${encodeURIComponent(lookupResult.slug)}`);
+      const refreshData: LookupResult = await refreshRes.json();
+      setLookupResult(refreshData);
+      setAddUrlMode(false);
+      setAddUrlValue("");
+      showToast("Project added successfully");
+    } catch {
+      setAddUrlError("Network error. Please try again.");
+    } finally {
+      setAddUrlSubmitting(false);
+    }
+  }, [addUrlValue, lookupResult]);
 
   const submitClaim = useCallback(async () => {
     if (!formName.trim()) {
@@ -127,22 +209,32 @@ export default function RegistryApp({ isLoggedIn }: Props) {
 
   const closeModal = useCallback(() => {
     setOverlayOpen(false);
+    setAddUrlMode(false);
   }, []);
 
   const chipClick = useCallback(
     (ns: string) => {
       setQuery(ns);
-      // Trigger search for chip
       setLoading(true);
-      fetch(`/api/namespaces/${encodeURIComponent(ns)}`)
-        .then((res) => res.json())
-        .then((data: LookupResult) => {
-          setLookupResult(data);
+      setSearchLoading(true);
+      setHasSearched(true);
+      Promise.all([
+        fetch(`/api/namespaces/${encodeURIComponent(ns)}`),
+        fetch(`/api/search?q=${encodeURIComponent(ns)}`),
+      ])
+        .then(async ([lookupRes, searchRes]) => {
+          const lookupData: LookupResult = await lookupRes.json();
+          const searchData: { results: SearchResult[] } = await searchRes.json();
+          setLookupResult(lookupData);
+          setSearchResults(searchData.results.filter((r) => r.slug !== ns));
           setView("result");
           setOverlayOpen(true);
         })
         .catch(() => showToast("Failed to look up namespace"))
-        .finally(() => setLoading(false));
+        .finally(() => {
+          setLoading(false);
+          setSearchLoading(false);
+        });
     },
     [],
   );
@@ -208,22 +300,40 @@ export default function RegistryApp({ isLoggedIn }: Props) {
             </div>
           </div>
 
-          <div className="chips-area">
-            <div className="chips-label">try searching</div>
-            <div className="chips">
-              {["cursor", "nx", "biome", "claude", "turborepo", "mise", "warp", "Linear"].map(
-                (ns) => (
+          {hasSearched && searchResults.length > 0 ? (
+            <div className="chips-area">
+              <div className="chips-label">related namespaces</div>
+              <div className="chips">
+                {searchResults.map((r) => (
                   <div
-                    key={ns}
+                    key={r.slug}
                     className="chip"
-                    onClick={() => chipClick(ns)}
+                    onClick={() => chipClick(r.slug)}
                   >
-                    <span className="chip-status">○</span>.dotfolder/{ns}/
+                    <span className="chip-status" style={{ color: "var(--red)" }}>●</span>
+                    .dotfolder/{r.slug}/
                   </div>
-                ),
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="chips-area">
+              <div className="chips-label">try searching</div>
+              <div className="chips">
+                {["cursor", "nx", "biome", "claude", "turborepo", "mise", "warp", "Linear"].map(
+                  (ns) => (
+                    <div
+                      key={ns}
+                      className="chip"
+                      onClick={() => chipClick(ns)}
+                    >
+                      <span className="chip-status">○</span>.dotfolder/{ns}/
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="stats">
             <div className="stat">
@@ -251,7 +361,15 @@ export default function RegistryApp({ isLoggedIn }: Props) {
               <ResultView
                 result={lookupResult}
                 onClaim={openClaim}
+                onAddUrl={openAddUrl}
                 isLoggedIn={isLoggedIn}
+                addUrlMode={addUrlMode}
+                addUrlValue={addUrlValue}
+                setAddUrlValue={setAddUrlValue}
+                addUrlError={addUrlError}
+                addUrlSubmitting={addUrlSubmitting}
+                onSubmitAddUrl={submitAddUrl}
+                onCancelAddUrl={() => setAddUrlMode(false)}
               />
             )}
 
@@ -294,11 +412,27 @@ export default function RegistryApp({ isLoggedIn }: Props) {
 function ResultView({
   result,
   onClaim,
+  onAddUrl,
   isLoggedIn,
+  addUrlMode,
+  addUrlValue,
+  setAddUrlValue,
+  addUrlError,
+  addUrlSubmitting,
+  onSubmitAddUrl,
+  onCancelAddUrl,
 }: {
   result: LookupResult;
   onClaim: () => void;
+  onAddUrl: () => void;
   isLoggedIn: boolean;
+  addUrlMode: boolean;
+  addUrlValue: string;
+  setAddUrlValue: (v: string) => void;
+  addUrlError: string | null;
+  addUrlSubmitting: boolean;
+  onSubmitAddUrl: () => void;
+  onCancelAddUrl: () => void;
 }) {
   const ns = result.namespace;
   const taken = !result.available;
@@ -331,16 +465,6 @@ function ResultView({
                 <div className="pc-name">{ns.project_name}</div>
                 <span className="pc-badge">{ns.project_type}</span>
               </div>
-              {ns.urls?.[0] && (
-                <a
-                  href={ns.urls[0].url}
-                  className="pc-link"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  ↗ visit
-                </a>
-              )}
             </div>
             <div className="pc-body">
               <p className="pc-desc">
@@ -353,12 +477,87 @@ function ResultView({
                 <div className="pc-meta-item">
                   by <b>@{ns.owner_username || "unknown"}</b>
                 </div>
-                <div className="pc-meta-item">
-                  namespace <b>{ns.slug}</b>
-                </div>
               </div>
             </div>
           </div>
+
+          {ns.urls && ns.urls.length > 0 && (
+            <div className="url-list">
+              <div className="url-list-label">
+                {ns.urls.length} {ns.urls.length === 1 ? "project" : "projects"} registered
+              </div>
+              {ns.urls.map((u, i) => (
+                <a
+                  key={i}
+                  href={u.url}
+                  className="url-item"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="url-text">{u.url}</span>
+                  <span className="url-meta">
+                    {u.github_stars > 0 && (
+                      <span className="url-stars">★ {u.github_stars.toLocaleString()}</span>
+                    )}
+                    <span className="url-arrow">↗</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {addUrlMode ? (
+            <div className="add-url-form">
+              <div className="field">
+                <div className="field-label">
+                  your project url <span className="req">required</span>
+                </div>
+                <input
+                  type="url"
+                  placeholder="https://github.com/you/yourproject"
+                  value={addUrlValue}
+                  onChange={(e) => setAddUrlValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onSubmitAddUrl();
+                  }}
+                />
+              </div>
+              {addUrlError && (
+                <div
+                  style={{
+                    fontSize: "0.68rem",
+                    color: "var(--red)",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  {addUrlError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={onSubmitAddUrl}
+                  disabled={addUrlSubmitting}
+                  style={{ flex: 1 }}
+                >
+                  {addUrlSubmitting ? "adding…" : "add project"}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={onCancelAddUrl}
+                  style={{ flex: 0, minWidth: "80px" }}
+                >
+                  cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="btn btn-ghost" onClick={onAddUrl} style={{ marginTop: "0.5rem" }}>
+              {isLoggedIn
+                ? "＋ add your project"
+                : "sign in to add your project"}
+            </button>
+          )}
         </>
       ) : (
         <>

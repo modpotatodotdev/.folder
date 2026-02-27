@@ -952,6 +952,70 @@ h1 em {
   margin-bottom: 1.6rem;
 }
 
+/* ── URL LIST ── */
+.url-list {
+  margin-bottom: 0.75rem;
+}
+
+.url-list-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 0.45rem;
+}
+
+.url-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 0.3rem;
+  text-decoration: none;
+  transition: border-color 0.12s, background 0.12s;
+  cursor: pointer;
+}
+
+.url-item:hover {
+  border-color: var(--border-dark);
+  background: var(--bg2);
+}
+
+.url-text {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.url-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.url-stars {
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+
+.url-arrow {
+  font-size: 0.7rem;
+  color: var(--muted2);
+}
+
+.add-url-form {
+  margin-top: 0.75rem;
+}
+
 /* toast */
 .toast {
   position: fixed;
