@@ -352,7 +352,7 @@ app.get("/search", async (c) => {
 // ── Namespace: list recent ──
 app.get("/namespaces", async (c) => {
   const { namespaces, count } = await getRecentNamespacesWithCount(c.env.DB);
-  return c.json({ namespaces: namespaces, total: count });
+  return c.json({ namespaces, total: count });
 });
 
 // ── User: my namespaces ──
