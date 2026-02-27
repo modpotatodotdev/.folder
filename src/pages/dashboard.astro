@@ -1,24 +1,19 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { getSessionCookie, validateSession } from "../lib/auth";
 import { getUserNamespaces } from "../lib/db";
 
-let user: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null = null;
+const user = Astro.locals.user ?? null;
 let namespaces: { slug: string; project_name: string; project_type: string; description: string | null; created_at: string }[] = [];
 
-try {
-  const runtime = Astro.locals.runtime;
-  if (runtime?.env?.DB) {
-    const sessionId = getSessionCookie(Astro.request);
-    if (sessionId) {
-      user = await validateSession(runtime.env.DB, sessionId);
-      if (user) {
-        namespaces = await getUserNamespaces(runtime.env.DB, user.id);
-      }
+if (user) {
+  try {
+    const runtime = Astro.locals.runtime;
+    if (runtime?.env?.DB) {
+      namespaces = await getUserNamespaces(runtime.env.DB, user.id);
     }
+  } catch {
+    // No runtime
   }
-} catch {
-  // No runtime
 }
 
 if (!user) {

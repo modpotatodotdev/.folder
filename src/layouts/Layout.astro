@@ -1,6 +1,5 @@
 ---
 import "../styles/global.css";
-import { getSessionCookie, validateSession } from "../lib/auth";
 
 interface Props {
   title?: string;
@@ -8,19 +7,7 @@ interface Props {
 
 const { title = "dotfolder — namespace registry" } = Astro.props;
 
-let user: { id: string; username: string; display_name: string | null; avatar_url: string | null } | null = null;
-
-try {
-  const runtime = Astro.locals.runtime;
-  if (runtime?.env?.DB) {
-    const sessionId = getSessionCookie(Astro.request);
-    if (sessionId) {
-      user = await validateSession(runtime.env.DB, sessionId);
-    }
-  }
-} catch {
-  // No runtime available (build time or dev without D1)
-}
+const user = Astro.locals.user ?? null;
 ---
 
 <!DOCTYPE html>

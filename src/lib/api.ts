@@ -15,11 +15,10 @@ import {
   lookupNamespace,
   claimNamespace,
   addNamespaceUrl,
-  getRecentNamespaces,
-  getNamespaceCount,
+  urlExistsForNamespace,
+  getRecentNamespacesWithCount,
   getUserNamespaces,
   searchNamespaces,
-  namespaceExists,
   isValidSlug,
   isValidHttpUrl,
 } from "./db";
@@ -37,6 +36,7 @@ type D1Database = import("@cloudflare/workers-types").D1Database;
 const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
 const MAX_SEARCH_QUERY_LENGTH = 100;
+const ALLOWED_PROJECT_TYPES = new Set(["CLI", "MCP", "App", "SDK", "Plugin", "Other"]);
 
 async function fetchGitHubStars(url: string, token?: string): Promise<number> {
   try {
@@ -230,13 +230,18 @@ app.post("/namespaces", async (c) => {
     return c.json({ error: "Invalid session" }, 401);
   }
 
-  const body = await c.req.json<{
+  let body: {
     slug: string;
     project_name: string;
     project_type?: string;
     description?: string;
     url: string;
-  }>();
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
 
   if (!body.slug || !body.project_name || !body.url) {
     return c.json({ error: "Missing required fields: slug, project_name, url" }, 400);
@@ -258,24 +263,31 @@ app.post("/namespaces", async (c) => {
     return c.json({ error: "Invalid URL" }, 400);
   }
 
-  // Check if already taken
-  const existing = await namespaceExists(c.env.DB, body.slug);
-  if (existing) {
-    return c.json({ error: "Namespace already claimed" }, 409);
+  const projectType = body.project_type || "Other";
+  if (!ALLOWED_PROJECT_TYPES.has(projectType)) {
+    return c.json({ error: "Invalid project type" }, 400);
   }
 
-  const result = await claimNamespace(
-    c.env.DB,
-    body.slug,
-    body.project_name,
-    body.project_type || "Other",
-    body.description || null,
-    user.id,
-    body.url,
-    await fetchGitHubStars(body.url, c.env.GITHUB_TOKEN),
-  );
+  try {
+    const result = await claimNamespace(
+      c.env.DB,
+      body.slug,
+      body.project_name,
+      projectType,
+      body.description || null,
+      user.id,
+      body.url,
+      await fetchGitHubStars(body.url, c.env.GITHUB_TOKEN),
+    );
 
-  return c.json({ success: true, id: result.id }, 201);
+    return c.json({ success: true, id: result.id }, 201);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "";
+    if (message.includes("UNIQUE") || message.includes("unique") || message.includes("constraint")) {
+      return c.json({ error: "Namespace already claimed" }, 409);
+    }
+    throw err;
+  }
 });
 
 // ── Namespace: add URL to existing namespace ──
@@ -291,12 +303,22 @@ app.post("/namespaces/:slug/urls", async (c) => {
   }
 
   const slug = c.req.param("slug");
+  if (!isValidSlug(slug)) {
+    return c.json({ error: "Invalid namespace slug" }, 400);
+  }
+
   const ns = await lookupNamespace(c.env.DB, slug);
   if (!ns) {
     return c.json({ error: "Namespace not found" }, 404);
   }
 
-  const body = await c.req.json<{ url: string }>();
+  let body: { url: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
   if (!body.url) {
     return c.json({ error: "Missing required field: url" }, 400);
   }
@@ -305,6 +327,11 @@ app.post("/namespaces/:slug/urls", async (c) => {
   }
   if (!isValidHttpUrl(body.url)) {
     return c.json({ error: "Invalid URL" }, 400);
+  }
+
+  const duplicate = await urlExistsForNamespace(c.env.DB, ns.id, body.url);
+  if (duplicate) {
+    return c.json({ error: "URL already registered for this namespace" }, 409);
   }
 
   await addNamespaceUrl(c.env.DB, ns.id, body.url, user.id, await fetchGitHubStars(body.url, c.env.GITHUB_TOKEN));
@@ -324,9 +351,8 @@ app.get("/search", async (c) => {
 
 // ── Namespace: list recent ──
 app.get("/namespaces", async (c) => {
-  const recent = await getRecentNamespaces(c.env.DB);
-  const count = await getNamespaceCount(c.env.DB);
-  return c.json({ namespaces: recent, total: count });
+  const { namespaces, count } = await getRecentNamespacesWithCount(c.env.DB);
+  return c.json({ namespaces: namespaces, total: count });
 });
 
 // ── User: my namespaces ──

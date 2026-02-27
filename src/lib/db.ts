@@ -43,17 +43,6 @@ export async function lookupNamespace(
   return { ...ns, urls: urls.results };
 }
 
-export async function namespaceExists(
-  db: D1Database,
-  slug: string,
-): Promise<boolean> {
-  const row = await db
-    .prepare("SELECT 1 FROM namespaces WHERE slug = ?")
-    .bind(slug)
-    .first();
-  return row !== null;
-}
-
 export async function claimNamespace(
   db: D1Database,
   slug: string,
@@ -85,6 +74,18 @@ export async function claimNamespace(
   return { id };
 }
 
+export async function urlExistsForNamespace(
+  db: D1Database,
+  namespaceId: string,
+  url: string,
+): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT 1 FROM namespace_urls WHERE namespace_id = ? AND url = ?")
+    .bind(namespaceId, url)
+    .first();
+  return row !== null;
+}
+
 export async function addNamespaceUrl(
   db: D1Database,
   namespaceId: string,
@@ -101,27 +102,26 @@ export async function addNamespaceUrl(
     .run();
 }
 
-export async function getRecentNamespaces(
+export async function getRecentNamespacesWithCount(
   db: D1Database,
   limit = 12,
-): Promise<Namespace[]> {
-  const result = await db
-    .prepare(
-      `SELECT n.*, u.username as owner_username
-       FROM namespaces n JOIN users u ON n.owner_id = u.id
-       ORDER BY n.created_at DESC LIMIT ?`,
-    )
-    .bind(limit)
-    .all<Namespace>();
+): Promise<{ namespaces: Namespace[]; count: number }> {
+  const [namespacesResult, countResult] = await db.batch([
+    db
+      .prepare(
+        `SELECT n.*, u.username as owner_username
+         FROM namespaces n JOIN users u ON n.owner_id = u.id
+         ORDER BY n.created_at DESC LIMIT ?`,
+      )
+      .bind(limit),
+    db.prepare("SELECT COUNT(*) as count FROM namespaces"),
+  ]);
 
-  return result.results;
-}
-
-export async function getNamespaceCount(db: D1Database): Promise<number> {
-  const row = await db
-    .prepare("SELECT COUNT(*) as count FROM namespaces")
-    .first<{ count: number }>();
-  return row?.count ?? 0;
+  return {
+    namespaces: namespacesResult.results as unknown as Namespace[],
+    count:
+      ((countResult.results as unknown as { count: number }[])[0])?.count ?? 0,
+  };
 }
 
 export async function getUserNamespaces(
