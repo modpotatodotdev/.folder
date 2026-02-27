@@ -11,10 +11,10 @@
     "db:migrate": "wrangler d1 execute dotfolder-db --local --file=schema.sql"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.5.0",
+    "@astrojs/cloudflare": "^12.6.6",
     "@astrojs/react": "^4.2.1",
-    "astro": "^5.7.13",
-    "hono": "^4.7.10",
+    "astro": "^5.15.8",
+    "hono": "^4.11.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

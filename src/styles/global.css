@@ -563,6 +563,21 @@ h1 em { font-style: italic; color: var(--muted); }
 
 .form-note { font-size: 0.6rem; color: var(--muted2); line-height: 1.5; margin-top: 0.75rem; }
 
+.back-btn {
+  background: none; border: none;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+  padding: 0;
+  transition: color 0.12s;
+}
+.back-btn:hover { color: var(--text); }
+
 /* success */
 .success-view { text-align: center; padding: 2rem 0.5rem 1rem; }
 .s-check {

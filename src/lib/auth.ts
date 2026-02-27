@@ -1,3 +1,5 @@
+type D1Database = import("@cloudflare/workers-types").D1Database;
+
 export function generateId(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -133,5 +135,3 @@ export async function findOrCreateUser(
   ]);
   return userId;
 }
-
-type D1Database = import("@cloudflare/workers-types").D1Database;
