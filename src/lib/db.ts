@@ -51,6 +51,7 @@ export async function claimNamespace(
   description: string | null,
   ownerId: string,
   url: string,
+  githubStars = 0,
 ): Promise<{ id: string }> {
   const id = crypto.randomUUID().replace(/-/g, "");
   const urlId = crypto.randomUUID().replace(/-/g, "");
@@ -64,10 +65,10 @@ export async function claimNamespace(
       .bind(id, slug, projectName, projectType, description, ownerId),
     db
       .prepare(
-        `INSERT INTO namespace_urls (id, namespace_id, url, submitted_by)
-         VALUES (?, ?, ?, ?)`,
+        `INSERT INTO namespace_urls (id, namespace_id, url, submitted_by, github_stars)
+         VALUES (?, ?, ?, ?, ?)`,
       )
-      .bind(urlId, id, url, ownerId),
+      .bind(urlId, id, url, ownerId, githubStars),
   ]);
 
   return { id };
@@ -78,13 +79,14 @@ export async function addNamespaceUrl(
   namespaceId: string,
   url: string,
   submittedBy: string,
+  githubStars = 0,
 ): Promise<void> {
   const id = crypto.randomUUID().replace(/-/g, "");
   await db
     .prepare(
-      "INSERT INTO namespace_urls (id, namespace_id, url, submitted_by) VALUES (?, ?, ?, ?)",
+      "INSERT INTO namespace_urls (id, namespace_id, url, submitted_by, github_stars) VALUES (?, ?, ?, ?, ?)",
     )
-    .bind(id, namespaceId, url, submittedBy)
+    .bind(id, namespaceId, url, submittedBy, githubStars)
     .run();
 }
 
