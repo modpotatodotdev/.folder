@@ -253,7 +253,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
     <>
       <div className="page">
         <div className="hero">
-          <div className="eyebrow">repo-level persistence, without the mess</div>
+
 
           <h1>
             one folder.
@@ -292,20 +292,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
                   {loading ? "…" : "look up ↵"}
                 </button>
               </div>
-              <div className="search-footer">
-                <div className="path-preview">
-                  .folder/
-                  <span className="hi">{slug || "…"}</span>/
-                </div>
-                <div className="search-legend">
-                  <span>
-                    <span className="ldot ldot-g"></span>free
-                  </span>
-                  <span>
-                    <span className="ldot ldot-r"></span>claimed
-                  </span>
-                </div>
-              </div>
+
             </div>
           </div>
 
@@ -350,9 +337,6 @@ export default function RegistryApp({ isLoggedIn }: Props) {
                 <b>{namespaceCount.toLocaleString()}</b> registered
               </div>
             )}
-            <div className="stat">
-              <b>cli · mcp · app · sdk</b> types
-            </div>
           </div>
         </div>
       </div>
