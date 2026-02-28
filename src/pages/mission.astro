@@ -1,0 +1,220 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title=".folder — mission">
+    <main class="dashboard-page mission-page">
+        <h1
+            style="font-family:var(--serif);font-size:2rem;margin-bottom:0.4rem;"
+        >
+            why .folder/
+        </h1>
+        <p class="mission-lede">
+            The problem is simple. The solution should be too.
+        </p>
+
+        <section class="mission-section">
+            <h2>the mess at your repo root</h2>
+            <p>
+                Every developer tool wants its own dotfolder. Your repo root
+                ends up littered with <code>.sisyphus/</code>, <code>.vscode/</code>,
+                <code>.idea/</code>, <code>.astro/</code>, <code>.wrangler/</code>,
+                — and six more you forgot to gitignore. Each
+                one is invisible-by-convention, impossible to discover, and guaranteed
+                to collide with the next tool that picks the same name.
+            </p>
+        </section>
+
+        <section class="mission-section">
+            <h2>one folder to hold them all</h2>
+            <p>
+                <code>.folder/</code> is a single, shared directory at your repo root.
+                Instead of scattering state everywhere, tools store their data in
+                a named subdirectory — <code>.folder/cursor/</code>,
+                <code>.folder/biome/</code>, <code>.folder/yourTool/</code>. One
+                directory. One <code>.gitignore</code> entry. Everything in one place.
+            </p>
+        </section>
+
+        <section class="mission-section">
+            <h2>why a registry?</h2>
+            <p>
+                If two tools pick the same subdirectory name, their data
+                collides and things break. The .folder registry is a
+                lightweight, public record of which names are taken — so you can
+                look up a namespace before you ship, claim it, and know it won't
+                conflict with anyone else. Think of it as DNS for your
+                repo's local state.
+            </p>
+        </section>
+
+        <section class="mission-section">
+            <h2>how it works</h2>
+            <ol class="mission-steps">
+                <li>
+                    <strong>Look up</strong> a namespace to check if it's available.
+                </li>
+                <li>
+                    <strong>Sign in</strong> with GitHub to verify your identity.
+                </li>
+                <li>
+                    <strong>Claim</strong> your namespace with a project name, type,
+                    and URL.
+                </li>
+                <li>
+                    <strong>Ship</strong> your tool — anyone can search the registry
+                    to see what lives under <code>.folder/yourName/</code>.
+                </li>
+            </ol>
+        </section>
+
+        <section class="mission-section">
+            <h2>who is this for?</h2>
+            <p>
+                Anyone building developer tools that need to store per-repo data
+                — CLI tools, MCP servers, editor plugins, SDKs, and anything
+                else that currently drops a dotfolder in your project root. If
+                your tool writes files to the user's repo, it belongs in <code>.folder/</code>.
+            </p>
+        </section>
+
+        <section class="mission-section">
+            <h2>principles</h2>
+            <ul class="mission-principles">
+                <li>
+                    <strong>Convention over configuration.</strong> No spec to implement,
+                    no SDK to install. Just put your stuff in <code>.folder/yourName/</code>.
+                </li>
+                <li>
+                    <strong>Opt-in, not mandated.</strong> The registry is a coordination
+                    layer, not a gatekeeper. You don't need permission to use
+                    <code>.folder/</code> — but registering prevents headaches.
+                </li>
+                <li>
+                    <strong>Minimal by design.</strong> We store a name, a type, a
+                    URL, and who claimed it. Nothing else. No analytics, no tracking,
+                    no lock-in.
+                </li>
+            </ul>
+        </section>
+
+        <div class="mission-cta">
+            <a
+                href="/"
+                class="btn btn-primary"
+                style="max-width:280px;margin:0 auto;"
+            >
+                look up a namespace →
+            </a>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .mission-page {
+        max-width: 600px;
+    }
+
+    .mission-lede {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 1rem;
+        color: var(--muted);
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+    }
+
+    .mission-section {
+        margin-bottom: 2rem;
+    }
+
+    .mission-section h2 {
+        font-family: var(--serif);
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        letter-spacing: -0.01em;
+    }
+
+    .mission-section p {
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.9;
+    }
+
+    .mission-section code {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        padding: 0.08rem 0.28rem;
+        border-radius: 3px;
+        color: var(--text);
+    }
+
+    .mission-steps {
+        list-style: none;
+        counter-reset: steps;
+        padding: 0;
+    }
+
+    .mission-steps li {
+        counter-increment: steps;
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.9;
+        padding-left: 1.6rem;
+        position: relative;
+        margin-bottom: 0.35rem;
+    }
+
+    .mission-steps li::before {
+        content: counter(steps);
+        position: absolute;
+        left: 0;
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 0.85rem;
+        color: var(--muted2);
+        top: 0.04rem;
+    }
+
+    .mission-steps li strong {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .mission-principles {
+        list-style: none;
+        padding: 0;
+    }
+
+    .mission-principles li {
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.9;
+        padding-left: 1rem;
+        position: relative;
+        margin-bottom: 0.55rem;
+    }
+
+    .mission-principles li::before {
+        content: "—";
+        position: absolute;
+        left: 0;
+        color: var(--muted2);
+    }
+
+    .mission-principles li strong {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .mission-cta {
+        margin-top: 2.5rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: center;
+    }
+</style>
