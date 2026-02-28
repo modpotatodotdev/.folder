@@ -17,10 +17,13 @@ import Layout from "../layouts/Layout.astro";
             <h2>the mess at your repo root</h2>
             <p>
                 Every developer tool wants its own dotfolder. Your repo root
-                ends up littered with <code>.sisyphus/</code>, <code>.vscode/</code>,
-                <code>.idea/</code>, <code>.astro/</code>, <code>.wrangler/</code>,
-                — and six more you forgot to gitignore. Each
-                one is invisible-by-convention, impossible to discover, and guaranteed
+                ends up littered with <code>.sisyphus/</code>, <code
+                    >.vscode/</code
+                >,
+                <code>.idea/</code>, <code>.astro/</code>, <code
+                    >.wrangler/</code
+                >, and six more you forgot to gitignore. Each one is
+                invisible-by-convention, impossible to discover, and guaranteed
                 to collide with the next tool that picks the same name.
             </p>
         </section>
@@ -31,8 +34,22 @@ import Layout from "../layouts/Layout.astro";
                 <code>.folder/</code> is a single, shared directory at your repo root.
                 Instead of scattering state everywhere, tools store their data in
                 a named subdirectory — <code>.folder/cursor/</code>,
-                <code>.folder/biome/</code>, <code>.folder/yourTool/</code>. One
-                directory. One <code>.gitignore</code> entry. Everything in one place.
+                <code>.folder/biome/</code>, <code>.folder/yourTool/</code>.
+                Everything in one place, discoverable and organized.
+            </p>
+        </section>
+
+        <section class="mission-section">
+            <h2>what about git?</h2>
+            <p>
+                Some tool state should be tracked — project rules, shared
+                config, anything the team needs to stay in sync. Other state is
+                ephemeral — caches, logs, runtime artifacts. <code
+                    >.folder/</code
+                > handles both. Gitignore the whole directory and un-ignore what matters,
+                track everything and ignore specific subdirectories, or mix and match.
+                The convention is about <em>where</em> things live, not
+                <em>whether</em> they're committed.
             </p>
         </section>
 
@@ -43,8 +60,8 @@ import Layout from "../layouts/Layout.astro";
                 collides and things break. The .folder registry is a
                 lightweight, public record of which names are taken — so you can
                 look up a namespace before you ship, claim it, and know it won't
-                conflict with anyone else. Think of it as DNS for your
-                repo's local state.
+                conflict with anyone else. Think of it as DNS for your repo's
+                local state.
             </p>
         </section>
 
@@ -74,7 +91,9 @@ import Layout from "../layouts/Layout.astro";
                 Anyone building developer tools that need to store per-repo data
                 — CLI tools, MCP servers, editor plugins, SDKs, and anything
                 else that currently drops a dotfolder in your project root. If
-                your tool writes files to the user's repo, it belongs in <code>.folder/</code>.
+                your tool writes files to the user's repo, it belongs in <code
+                    >.folder/</code
+                >.
             </p>
         </section>
 
@@ -83,7 +102,9 @@ import Layout from "../layouts/Layout.astro";
             <ul class="mission-principles">
                 <li>
                     <strong>Convention over configuration.</strong> No spec to implement,
-                    no SDK to install. Just put your stuff in <code>.folder/yourName/</code>.
+                    no SDK to install. Just put your stuff in <code
+                        >.folder/yourName/</code
+                    >.
                 </li>
                 <li>
                     <strong>Opt-in, not mandated.</strong> The registry is a coordination
