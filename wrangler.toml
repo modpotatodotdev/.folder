@@ -3,6 +3,8 @@ name = "dotfolder"
 main = "dist/_worker.js/index.js"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true       # or false if you only want custom domain traffic
+preview_urls = true      # or false to disable preview URLs
 
 [assets]
 directory = "./dist"
