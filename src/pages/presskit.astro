@@ -1,0 +1,300 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title=".folder — presskit" description="Brand assets and logos for the .folder namespace registry.">
+    <main class="dashboard-page presskit-page">
+        <h1
+            style="font-family:var(--serif);font-size:2rem;margin-bottom:0.4rem;"
+        >
+            presskit
+        </h1>
+        <p class="presskit-lede">
+            Brand assets for .folder — use freely when referencing the project.
+        </p>
+
+        <section class="presskit-section">
+            <h2>logo</h2>
+            <p>
+                The .folder logo is the text
+                <strong><span style="color:var(--muted)">.</span>📁</strong>
+                — a period followed by the folder emoji. It reflects the
+                convention: a single dotfolder that holds everything.
+            </p>
+        </section>
+
+        <section class="presskit-section">
+            <h2>assets</h2>
+            <div class="presskit-grid">
+                <div class="presskit-card">
+                    <div class="presskit-preview light">
+                        <img src="/logo.svg" alt=".folder logo" width="80" height="80" />
+                    </div>
+                    <div class="presskit-card-info">
+                        <span class="presskit-label">logo · svg</span>
+                        <a href="/logo.svg" download=".folder-logo.svg" class="presskit-dl">↓ download</a>
+                    </div>
+                </div>
+                <div class="presskit-card">
+                    <div class="presskit-preview dark">
+                        <img src="/logo.svg" alt=".folder logo" width="80" height="80" />
+                    </div>
+                    <div class="presskit-card-info">
+                        <span class="presskit-label">og image · png</span>
+                        <a href="/og.png" download=".folder-og.png" class="presskit-dl">↓ download</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="presskit-section">
+            <h2>colors</h2>
+            <div class="color-grid">
+                <div class="color-swatch">
+                    <div class="swatch" style="background:#1a1915;"></div>
+                    <span class="color-name">ink</span>
+                    <span class="color-hex">#1a1915</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch" style="background:#f5f2eb;border:1px solid var(--border);"></div>
+                    <span class="color-name">cream</span>
+                    <span class="color-hex">#f5f2eb</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch" style="background:#8a8478;"></div>
+                    <span class="color-name">muted</span>
+                    <span class="color-hex">#8a8478</span>
+                </div>
+                <div class="color-swatch">
+                    <div class="swatch" style="background:#2d6a4f;"></div>
+                    <span class="color-name">green</span>
+                    <span class="color-hex">#2d6a4f</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="presskit-section">
+            <h2>typography</h2>
+            <div class="type-samples">
+                <div class="type-sample">
+                    <span class="type-preview" style="font-family:var(--serif);font-size:1.4rem;">Instrument Serif</span>
+                    <span class="type-usage">headings & display</span>
+                </div>
+                <div class="type-sample">
+                    <span class="type-preview" style="font-family:var(--mono);font-size:0.85rem;">DM Mono</span>
+                    <span class="type-usage">body & interface</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="presskit-section">
+            <h2>usage guidelines</h2>
+            <ul class="presskit-guidelines">
+                <li>Use the logo as-is — don't modify colors, proportions, or spacing.</li>
+                <li>Maintain clear space around the logo equal to the height of the period.</li>
+                <li>When referencing the project in text, use <code>.folder</code> (lowercase, with period).</li>
+                <li>The logo works on both light and dark backgrounds.</li>
+            </ul>
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .presskit-page {
+        max-width: 600px;
+    }
+
+    .presskit-lede {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 1rem;
+        color: var(--muted);
+        margin-bottom: 2.5rem;
+        line-height: 1.6;
+    }
+
+    .presskit-section {
+        margin-bottom: 2rem;
+    }
+
+    .presskit-section h2 {
+        font-family: var(--serif);
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+        letter-spacing: -0.01em;
+    }
+
+    .presskit-section p {
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.9;
+    }
+
+    .presskit-section code {
+        font-family: var(--mono);
+        font-size: 0.72rem;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        padding: 0.08rem 0.28rem;
+        border-radius: 3px;
+        color: var(--text);
+    }
+
+    /* Asset grid */
+    .presskit-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+    }
+
+    .presskit-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .presskit-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        min-height: 110px;
+    }
+
+    .presskit-preview.light {
+        background: var(--bg);
+    }
+
+    .presskit-preview.dark {
+        background: var(--text);
+    }
+
+    .presskit-preview.dark img {
+        filter: invert(1);
+    }
+
+    .presskit-card-info {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.55rem 0.75rem;
+        border-top: 1px solid var(--border);
+    }
+
+    .presskit-label {
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted2);
+    }
+
+    .presskit-dl {
+        font-family: var(--mono);
+        font-size: 0.64rem;
+        color: var(--text);
+        text-decoration: none;
+        border: 1px solid var(--border);
+        padding: 0.22rem 0.5rem;
+        border-radius: 3px;
+        transition: all 0.12s;
+    }
+
+    .presskit-dl:hover {
+        border-color: var(--border-dark);
+        background: var(--bg2);
+    }
+
+    /* Colors */
+    .color-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.65rem;
+        margin-top: 0.75rem;
+    }
+
+    .color-swatch {
+        text-align: center;
+    }
+
+    .swatch {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 6px;
+        margin-bottom: 0.4rem;
+    }
+
+    .color-name {
+        display: block;
+        font-size: 0.66rem;
+        color: var(--text);
+        margin-bottom: 0.1rem;
+    }
+
+    .color-hex {
+        display: block;
+        font-family: var(--mono);
+        font-size: 0.58rem;
+        color: var(--muted2);
+    }
+
+    /* Typography */
+    .type-samples {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 0.75rem;
+    }
+
+    .type-sample {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0.75rem 0.9rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+
+    .type-usage {
+        font-size: 0.6rem;
+        color: var(--muted2);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    /* Guidelines */
+    .presskit-guidelines {
+        list-style: none;
+        padding: 0;
+        margin-top: 0.5rem;
+    }
+
+    .presskit-guidelines li {
+        font-size: 0.75rem;
+        color: var(--muted);
+        line-height: 1.9;
+        padding-left: 1rem;
+        position: relative;
+        margin-bottom: 0.35rem;
+    }
+
+    .presskit-guidelines li::before {
+        content: "—";
+        position: absolute;
+        left: 0;
+        color: var(--muted2);
+    }
+
+    @media (max-width: 480px) {
+        .presskit-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .color-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
