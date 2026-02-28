@@ -3,9 +3,18 @@ import "../styles/global.css";
 
 interface Props {
   title?: string;
+  description?: string;
+  ogImage?: string;
 }
 
-const { title = ".folder — namespace registry" } = Astro.props;
+const {
+  title = ".folder — namespace registry",
+  description = "One shared directory for all your dev tool configs. Claim a namespace, avoid collisions, keep your repo root clean.",
+  ogImage = "/og.png",
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, "https://dotfolder.xyz");
+const ogImageURL = new URL(ogImage, "https://dotfolder.xyz").href;
 
 const user = Astro.locals.user ?? null;
 ---
@@ -16,6 +25,29 @@ const user = Astro.locals.user ?? null;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL.href} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL.href} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content=".folder" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap"
@@ -55,6 +87,8 @@ const user = Astro.locals.user ?? null;
 
     <footer class="legal-footer">
       <a href="/mission">mission</a>
+      <span>·</span>
+      <a href="/presskit">presskit</a>
       <span>·</span>
       <a href="/terms">terms</a>
       <span>·</span>
