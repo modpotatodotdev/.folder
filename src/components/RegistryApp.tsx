@@ -98,6 +98,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
       // Filter out the exact match from search results
       setSearchResults(searchData.results.filter((r) => r.slug !== s));
       setView("result");
+      inputRef.current?.blur();
       setOverlayOpen(true);
     } catch {
       showToast("Failed to look up namespace");
@@ -238,6 +239,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
           setLookupResult(lookupData);
           setSearchResults(searchData.results.filter((r) => r.slug !== ns));
           setView("result");
+          inputRef.current?.blur();
           setOverlayOpen(true);
         })
         .catch(() => showToast("Failed to look up namespace"))

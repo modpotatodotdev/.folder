@@ -146,18 +146,16 @@ header {
 }
 
 .legal-footer {
-  text-align: center;
-  padding: 0.8rem 1rem 1.2rem;
-  font-size: 0.66rem;
-  color: var(--muted2);
-  z-index: 50;
-}
-
-.legal-footer-fixed {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  text-align: center;
+  padding: 0.8rem 1rem calc(1.2rem + env(safe-area-inset-bottom));
+  font-size: 0.66rem;
+  color: var(--muted2);
+  z-index: 50;
+  background: var(--bg);
 }
 
 .legal-footer a {
