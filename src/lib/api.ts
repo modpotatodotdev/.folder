@@ -63,7 +63,7 @@ async function fetchGitHubStars(url: string, token?: string): Promise<number> {
     if (!match) return 0;
     const [, owner, repo] = match;
     const headers: Record<string, string> = {
-      "User-Agent": "dotfolder-app",
+      "User-Agent": "folder-app",
       Accept: "application/vnd.github+json",
     };
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -155,7 +155,7 @@ app.get("/auth/github/callback", async (c) => {
   const userRes = await fetch("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
-      "User-Agent": "dotfolder-app",
+      "User-Agent": "folder-app",
     },
   });
 

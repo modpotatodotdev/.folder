@@ -1,5 +1,5 @@
 {
-  "name": "dotfolder",
+  "name": "folder",
   "type": "module",
   "version": "0.1.0",
   "private": true,
@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "db:migrate": "wrangler d1 execute dotfolder-db --local --file=schema.sql",
+    "db:migrate": "wrangler d1 execute folder-db --local --file=schema.sql",
     "staging": "npm run build && wrangler dev --env staging --assets ./dist --script ./dist/_worker.js/index.js"
   },
   "dependencies": {

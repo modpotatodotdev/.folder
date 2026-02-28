@@ -1,4 +1,4 @@
-# dotfolder
+# folder
 .folder/&lt;THIS COULD BE YOU>
 
 Legal:

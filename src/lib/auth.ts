@@ -6,9 +6,9 @@ export function generateId(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const SESSION_COOKIE = "dotfolder_session";
+const SESSION_COOKIE = "folder_session";
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
-const OAUTH_STATE_COOKIE = "dotfolder_oauth_state";
+const OAUTH_STATE_COOKIE = "folder_oauth_state";
 const OAUTH_STATE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
 
 export async function createSession(

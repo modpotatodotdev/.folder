@@ -262,14 +262,14 @@ export default function RegistryApp({ isLoggedIn }: Props) {
           </h1>
 
           <p className="hero-sub">
-            Namespace registry for <code>.dotfolder/</code> — look up and
+            Namespace registry for <code>.folder/</code> — look up and
             claim a directory name before your tool ships.
           </p>
 
           <div className="search-area">
             <div className="search-box">
               <div className="search-top">
-                <span className="prefix">.dotfolder/</span>
+                <span className="prefix">.folder/</span>
                 <input
                   ref={inputRef}
                   className="search-input"
@@ -294,7 +294,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
               </div>
               <div className="search-footer">
                 <div className="path-preview">
-                  .dotfolder/
+                  .folder/
                   <span className="hi">{slug || "…"}</span>/
                 </div>
                 <div className="search-legend">
@@ -320,7 +320,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
                     onClick={() => chipClick(r.slug)}
                   >
                     <span className="chip-status" style={{ color: "var(--red)" }}>●</span>
-                    .dotfolder/{r.slug}/
+                    .folder/{r.slug}/
                   </div>
                 ))}
               </div>
@@ -336,7 +336,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
                       className="chip"
                       onClick={() => chipClick(ns)}
                     >
-                      <span className="chip-status">○</span>.dotfolder/{ns}/
+                      <span className="chip-status">○</span>.folder/{ns}/
                     </div>
                   ),
                 )}
@@ -453,7 +453,7 @@ function ResultView({
       <div className="breadcrumb">
         <span className="bc-seg">~</span>
         <span className="bc-slash">/</span>
-        <span className="bc-seg">.dotfolder</span>
+        <span className="bc-seg">.folder</span>
         <span className="bc-slash">/</span>
         <span className="bc-ns">{result.slug}</span>
         <span className="bc-slash">/</span>
@@ -465,7 +465,7 @@ function ResultView({
           <span className="s-dot"></span>
           <span className="s-label">{taken ? "claimed" : "available"}</span>
         </div>
-        <span className="s-path">.dotfolder/{result.slug}/</span>
+        <span className="s-path">.folder/{result.slug}/</span>
       </div>
 
       {taken && ns ? (
@@ -576,13 +576,13 @@ function ResultView({
             <div className="free-italic">unclaimed</div>
             <p>
               Nothing is registered under{" "}
-              <strong>.dotfolder/{result.slug}/</strong> yet.
+              <strong>.folder/{result.slug}/</strong> yet.
             </p>
           </div>
           <button className="btn btn-primary" onClick={onClaim}>
             {isLoggedIn
-              ? `✦ claim .dotfolder/${result.slug}/`
-              : `sign in to claim .dotfolder/${result.slug}/`}
+              ? `✦ claim .folder/${result.slug}/`
+              : `sign in to claim .folder/${result.slug}/`}
           </button>
         </>
       )}
@@ -651,7 +651,7 @@ function FormView({
           marginBottom: "1.6rem",
         }}
       >
-        Claiming <code>.dotfolder/{slug}/</code> — fill in your project details.
+        Claiming <code>.folder/{slug}/</code> — fill in your project details.
       </div>
 
       <div className="field">
@@ -660,7 +660,7 @@ function FormView({
           type="text"
           className="field-locked"
           readOnly
-          value={`.dotfolder/${slug}/`}
+          value={`.folder/${slug}/`}
         />
       </div>
 
@@ -738,7 +738,7 @@ function FormView({
       >
         {submitting
           ? "registering…"
-          : `register .dotfolder/${slug}/ →`}
+          : `register .folder/${slug}/ →`}
       </button>
     </>
   );
@@ -756,10 +756,10 @@ function SuccessView({
       <div className="s-check">✓</div>
       <h3>namespace registered</h3>
       <p>
-        Your project now owns <strong>.dotfolder/{slug}/</strong>. Anyone
+        Your project now owns <strong>.folder/{slug}/</strong>. Anyone
         searching this namespace will see your project.
       </p>
-      <div className="s-path-pill">.dotfolder/{slug}/</div>
+      <div className="s-path-pill">.folder/{slug}/</div>
       <br />
       <button
         className="btn btn-ghost"

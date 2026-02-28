@@ -1,5 +1,5 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "dotfolder"
+name = "folder"
 compatibility_date = "2025-04-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -8,11 +8,11 @@ directory = "./dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "dotfolder-db"
+database_name = "folder-db"
 database_id = "placeholder-replace-with-real-id"
 
 [env.staging]
-name = "dotfolder-staging"
+name = "folder-staging"
 compatibility_flags = ["nodejs_compat"]
 
 [env.staging.assets]
@@ -20,5 +20,5 @@ directory = "./dist"
 
 [[env.staging.d1_databases]]
 binding = "DB"
-database_name = "dotfolder-db"
+database_name = "folder-db"
 database_id = "placeholder-replace-with-real-id"
