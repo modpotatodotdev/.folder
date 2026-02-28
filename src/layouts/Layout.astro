@@ -16,7 +16,6 @@ const {
 
 const canonicalURL = new URL(Astro.url.pathname, "https://dotfolder.xyz");
 const ogImageURL = new URL(ogImage, "https://dotfolder.xyz").href;
-const isHomePage = Astro.url.pathname === "/";
 
 const user = Astro.locals.user ?? null;
 ---
@@ -88,7 +87,7 @@ const user = Astro.locals.user ?? null;
 
     <slot />
 
-    <footer class:list={["legal-footer", { "legal-footer-fixed": isHomePage }]}>
+    <footer class="legal-footer">
       <a href="/mission">mission</a>
       <span>·</span>
       <a href="/presskit">presskit</a>
