@@ -46,7 +46,9 @@ function hasInvalidMutationOrigin(request: Request): boolean {
   if (secFetchSite === "cross-site") return true;
 
   const origin = request.headers.get("origin");
-  if (!origin) return false;
+  if (!origin) {
+    return secFetchSite !== "same-origin" && secFetchSite !== "same-site";
+  }
 
   try {
     return new URL(origin).origin !== new URL(request.url).origin;
@@ -81,7 +83,7 @@ app.use("*", async (c, next) => {
   c.res.headers.set("X-Frame-Options", "DENY");
   c.res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   c.res.headers.set("Cross-Origin-Resource-Policy", "same-origin");
-  c.res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  c.res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=()");
   c.res.headers.set(
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://avatars.githubusercontent.com; connect-src 'self'; frame-ancestors 'none'",
