@@ -1,6 +1,6 @@
 # Local Staging Guide
 
-This guide explains how to run the "**jawn**" (this app) locally using "**workersd**" (`workerd`/Wrangler) to simulate a production-like environment.
+This guide explains how to run the "**folder**" (this app) locally using "**workersd**" (`workerd`/Wrangler) to simulate a production-like environment.
 
 ## 1. Local Database Setup
 

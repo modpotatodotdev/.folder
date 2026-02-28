@@ -9,7 +9,7 @@ directory = "./dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "folder-db"
-database_id = "placeholder-replace-with-real-id"
+database_id = "e9a9fd08-a1c0-4222-8c7a-56cf5b984d6d"
 
 [env.staging]
 name = "folder-staging"

@@ -8,7 +8,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "db:migrate": "wrangler d1 execute folder-db --local --file=schema.sql",
+    "db:migrate": "wrangler d1 execute folder-db --file=schema.sql",
+    "db:migrate:remote": "wrangler d1 execute folder-db --remote --file=schema.sql",
+    "db:migrate:local": "wrangler d1 execute folder-db --local --file=schema.sql",
     "staging": "npm run build && wrangler dev --env staging --assets ./dist --script ./dist/_worker.js/index.js"
   },
   "dependencies": {

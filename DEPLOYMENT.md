@@ -21,18 +21,18 @@ npm ci
 Create a D1 database (if you do not already have one):
 
 ```bash
-npx wrangler d1 create dotfolder-db
+npx wrangler d1 create folder-db
 ```
 
 Update `wrangler.toml`:
 
 - Set `database_id` to the value returned by Cloudflare
-- Keep `binding = "DB"` and `database_name = "dotfolder-db"`
+- Keep `binding = "DB"` and `database_name = "folder-db"`
 
 Run the schema migration:
 
 ```bash
-npm run db:migrate
+npm run db:migrate:remote
 ```
 
 ## 3) Configure secrets
@@ -40,9 +40,9 @@ npm run db:migrate
 Set required secrets in Cloudflare Worker environment:
 
 ```bash
-npx wrangler secret put GITHUB_CLIENT_ID
-npx wrangler secret put GITHUB_CLIENT_SECRET
-npx wrangler secret put SESSION_SECRET
+npx wrangler secret put GITHUB_CLIENT_ID --env ""
+npx wrangler secret put GITHUB_CLIENT_SECRET --env ""
+npx wrangler secret put SESSION_SECRET --env ""
 ```
 
 ## 4) Configure GitHub OAuth callback
