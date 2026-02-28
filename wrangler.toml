@@ -25,3 +25,9 @@ directory = "./dist"
 binding = "DB"
 database_name = "folder-db"
 database_id = "placeholder-replace-with-real-id"
+
+[observability]
+[observability.logs]
+enabled = true
+invocation_logs = true
+persist = false
