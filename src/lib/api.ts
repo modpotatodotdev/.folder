@@ -38,6 +38,23 @@ const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 const MAX_SEARCH_QUERY_LENGTH = 100;
 const ALLOWED_PROJECT_TYPES = new Set(["CLI", "MCP", "App", "SDK", "Plugin", "Other"]);
 
+function hasInvalidMutationOrigin(request: Request): boolean {
+  const method = request.method.toUpperCase();
+  if (method === "GET" || method === "HEAD" || method === "OPTIONS") return false;
+
+  const secFetchSite = request.headers.get("sec-fetch-site");
+  if (secFetchSite === "cross-site") return true;
+
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+
+  try {
+    return new URL(origin).origin !== new URL(request.url).origin;
+  } catch {
+    return true;
+  }
+}
+
 async function fetchGitHubStars(url: string, token?: string): Promise<number> {
   try {
     const match = url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/?#]+)/);
@@ -62,6 +79,9 @@ app.use("*", async (c, next) => {
   c.res.headers.set("X-Content-Type-Options", "nosniff");
   c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   c.res.headers.set("X-Frame-Options", "DENY");
+  c.res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
+  c.res.headers.set("Cross-Origin-Resource-Policy", "same-origin");
+  c.res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   c.res.headers.set(
     "Content-Security-Policy",
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://avatars.githubusercontent.com; connect-src 'self'; frame-ancestors 'none'",
@@ -176,6 +196,10 @@ app.get("/auth/github/callback", async (c) => {
 
 // ── Auth: logout ──
 app.post("/auth/logout", async (c) => {
+  if (hasInvalidMutationOrigin(c.req.raw)) {
+    return c.text("Forbidden", 403);
+  }
+
   const sessionId = getSessionCookie(c.req.raw);
   if (sessionId) {
     await deleteSession(c.env.DB, sessionId);
@@ -220,6 +244,10 @@ app.get("/namespaces/:slug", async (c) => {
 
 // ── Namespace: claim ──
 app.post("/namespaces", async (c) => {
+  if (hasInvalidMutationOrigin(c.req.raw)) {
+    return c.json({ error: "Invalid request origin" }, 403);
+  }
+
   const sessionId = getSessionCookie(c.req.raw);
   if (!sessionId) {
     return c.json({ error: "Authentication required" }, 401);
@@ -292,6 +320,10 @@ app.post("/namespaces", async (c) => {
 
 // ── Namespace: add URL to existing namespace ──
 app.post("/namespaces/:slug/urls", async (c) => {
+  if (hasInvalidMutationOrigin(c.req.raw)) {
+    return c.json({ error: "Invalid request origin" }, 403);
+  }
+
   const sessionId = getSessionCookie(c.req.raw);
   if (!sessionId) {
     return c.json({ error: "Authentication required" }, 401);
