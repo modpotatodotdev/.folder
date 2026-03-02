@@ -86,7 +86,7 @@ npm run db:migrate:local
 npm run dev
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for full production deploy instructions and [LOCAL_STAGING.md](LOCAL_STAGING.md) for running a local staging build.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full production deploy instructions.
 
 ## Database Schema
 
