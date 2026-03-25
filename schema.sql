@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Registered namespaces
 CREATE TABLE IF NOT EXISTS namespaces (
   id TEXT PRIMARY KEY,
-  slug TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE COLLATE NOCASE,
   project_name TEXT NOT NULL,
   project_type TEXT NOT NULL DEFAULT 'Other',
   description TEXT,

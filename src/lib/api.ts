@@ -227,7 +227,7 @@ app.get("/auth/me", async (c) => {
 
 // ── Namespace: lookup ──
 app.get("/namespaces/:slug", async (c) => {
-  const slug = c.req.param("slug");
+  const slug = c.req.param("slug").toLowerCase();
   if (!isValidSlug(slug)) {
     return c.json({ error: "Invalid namespace slug" }, 400);
   }
@@ -277,7 +277,7 @@ app.post("/namespaces", async (c) => {
     return c.json({ error: "Missing required fields: slug, project_name, url" }, 400);
   }
 
-  if (!isValidSlug(body.slug)) {
+  if (!isValidSlug(body.slug.toLowerCase())) {
     return c.json({ error: "Invalid namespace slug" }, 400);
   }
   if (body.project_name.length > 100) {
@@ -301,7 +301,7 @@ app.post("/namespaces", async (c) => {
   try {
     const result = await claimNamespace(
       c.env.DB,
-      body.slug,
+      body.slug.toLowerCase(),
       body.project_name,
       projectType,
       body.description || null,
@@ -336,7 +336,7 @@ app.post("/namespaces/:slug/urls", async (c) => {
     return c.json({ error: "Invalid session" }, 401);
   }
 
-  const slug = c.req.param("slug");
+  const slug = c.req.param("slug").toLowerCase();
   if (!isValidSlug(slug)) {
     return c.json({ error: "Invalid namespace slug" }, 400);
   }

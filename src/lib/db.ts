@@ -30,7 +30,7 @@ export async function lookupNamespace(
        FROM namespaces n JOIN users u ON n.owner_id = u.id
        WHERE n.slug = ?`,
     )
-    .bind(slug)
+    .bind(slug.toLowerCase())
     .first<Namespace>();
 
   if (!ns) return null;
@@ -55,6 +55,7 @@ export async function claimNamespace(
 ): Promise<{ id: string }> {
   const id = crypto.randomUUID().replace(/-/g, "");
   const urlId = crypto.randomUUID().replace(/-/g, "");
+  const normalizedSlug = slug.toLowerCase();
 
   await db.batch([
     db
@@ -62,7 +63,7 @@ export async function claimNamespace(
         `INSERT INTO namespaces (id, slug, project_name, project_type, description, owner_id)
          VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, slug, projectName, projectType, description, ownerId),
+      .bind(id, normalizedSlug, projectName, projectType, description, ownerId),
     db
       .prepare(
         `INSERT INTO namespace_urls (id, namespace_id, url, submitted_by, github_stars)
@@ -184,7 +185,7 @@ export async function searchNamespaces(
 
 export function isValidSlug(slug: string): boolean {
   if (!slug || slug === "." || slug === "..") return false;
-  return /^[a-zA-Z0-9][a-zA-Z0-9_\-.]{0,63}$/.test(slug);
+  return /^[a-z0-9][a-z0-9_\-.]{0,63}$/.test(slug);
 }
 
 export function isValidHttpUrl(value: string): boolean {

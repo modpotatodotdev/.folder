@@ -31,7 +31,7 @@ interface Props {
 }
 
 function cleanSlug(v: string): string {
-  return v.trim().replace(/[^a-zA-Z0-9_\-.]/g, "");
+  return v.trim().replace(/[^a-zA-Z0-9_\-.]/g, "").toLowerCase();
 }
 
 function formatDate(iso: string): string {

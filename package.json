@@ -11,6 +11,9 @@
     "db:migrate": "wrangler d1 execute folder-db --file=schema.sql",
     "db:migrate:remote": "wrangler d1 execute folder-db --remote --file=schema.sql",
     "db:migrate:local": "wrangler d1 execute folder-db --local --file=schema.sql",
+    "db:fix-slugs": "wrangler d1 execute folder-db --file=migrations/001_lowercase_slugs.sql",
+    "db:fix-slugs:remote": "wrangler d1 execute folder-db --remote --file=migrations/001_lowercase_slugs.sql",
+    "db:fix-slugs:local": "wrangler d1 execute folder-db --local --file=migrations/001_lowercase_slugs.sql",
     "staging": "npm run build && wrangler dev --env staging --assets ./dist --script ./dist/_worker.js/index.js"
   },
   "dependencies": {
