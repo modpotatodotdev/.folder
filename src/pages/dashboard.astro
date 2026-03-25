@@ -8,7 +8,7 @@ let namespaces: {
   project_name: string;
   project_type: string;
   description: string | null;
-  created_at: string;
+  last_modified_at: number | null;
 }[] = [];
 
 if (user) {
@@ -25,6 +25,9 @@ if (user) {
 if (!user) {
   return Astro.redirect("/");
 }
+
+const TWO_WEEKS = 14 * 24 * 60 * 60;
+const now = Math.floor(Date.now() / 1000);
 ---
 
 <Layout title=".folder — dashboard">
@@ -53,20 +56,284 @@ if (!user) {
         </div>
       ) : (
         <div class="dash-ns-list">
-          {namespaces.map((ns) => (
-            <div class="dash-ns-card">
-              <div class="dash-ns-top">
-                <div class="dash-ns-name">{ns.project_name}</div>
-                <span class="pc-badge">{ns.project_type}</span>
+          {namespaces.map((ns) => {
+            let cooldownText = null;
+            if (ns.last_modified_at !== null) {
+              const elapsed = now - ns.last_modified_at;
+              if (elapsed < TWO_WEEKS) {
+                const remaining = TWO_WEEKS - elapsed;
+                const daysLeft = Math.ceil(remaining / (24 * 60 * 60));
+                cooldownText = `${daysLeft} day${daysLeft !== 1 ? "s" : ""} until next edit`;
+              }
+            }
+            return (
+              <div
+                class="dash-ns-card"
+                data-slug={ns.slug}
+                data-name={ns.project_name}
+                data-type={ns.project_type}
+                data-desc={ns.description || ""}
+              >
+                <div class="dash-ns-view">
+                  <div class="dash-ns-top">
+                    <div class="dash-ns-name">{ns.project_name}</div>
+                    <div class="dash-ns-actions">
+                      <span class="pc-badge">{ns.project_type}</span>
+                      <button
+                        class="dash-edit-btn"
+                        data-slug={ns.slug}
+                        title={cooldownText || "edit"}
+                        disabled={cooldownText !== null}
+                      >
+                        {cooldownText || "edit"}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="dash-ns-slug">.folder/{ns.slug}/</div>
+                  {ns.description && (
+                    <div class="dash-ns-desc">{ns.description}</div>
+                  )}
+                </div>
+                <div class="dash-ns-edit" style="display:none">
+                  <div class="field">
+                    <div class="field-label">project name</div>
+                    <input
+                      type="text"
+                      class="edit-name"
+                      value={ns.project_name}
+                      maxlength={100}
+                    />
+                  </div>
+                  <div class="field">
+                    <div class="field-label">project type</div>
+                    <div class="type-grid">
+                      {["CLI", "MCP", "App", "SDK", "Plugin", "Other"].map(
+                        (t) => (
+                          <div
+                            class={`type-opt${ns.project_type === t ? " on" : ""}`}
+                            data-type={t}
+                          >
+                            {t}
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="field-label">description</div>
+                    <textarea
+                      class="edit-desc"
+                      rows={2}
+                      maxlength={500}
+                      placeholder="what does it store here?"
+                    >{ns.description || ""}</textarea>
+                  </div>
+                  <div class="edit-error" style="display:none"></div>
+                  <div class="edit-actions">
+                    <button class="btn btn-primary edit-save">
+                      save changes
+                    </button>
+                    <button class="btn btn-ghost edit-cancel">cancel</button>
+                  </div>
+                </div>
               </div>
-              <div class="dash-ns-slug">.folder/{ns.slug}/</div>
-              {ns.description && (
-                <div class="dash-ns-desc">{ns.description}</div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )
     }
   </div>
+
+  <div class="toast" id="toast"></div>
 </Layout>
+
+<style>
+  .dash-ns-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .dash-edit-btn {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    background: none;
+    border: 1px solid var(--border);
+    padding: 0.22rem 0.55rem;
+    border-radius: 3px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+
+  .dash-edit-btn:hover:not(:disabled) {
+    border-color: var(--border-dark);
+    color: var(--text);
+    background: var(--bg2);
+  }
+
+  .dash-edit-btn:disabled {
+    cursor: not-allowed;
+    color: var(--muted2);
+  }
+
+  .dash-ns-edit {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .edit-error {
+    font-size: 0.66rem;
+    color: var(--red);
+    margin-bottom: 0.6rem;
+  }
+
+  .edit-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .edit-actions .btn {
+    flex: 1;
+    padding: 0.6rem;
+    font-size: 0.68rem;
+  }
+
+  .type-grid .type-opt {
+    padding: 0.4rem;
+    font-size: 0.6rem;
+  }
+</style>
+
+<script>
+  const TWO_WEEKS = 14 * 24 * 60 * 60;
+
+  function showToast(msg: string) {
+    const el = document.getElementById("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 2500);
+  }
+
+  document.querySelectorAll(".dash-edit-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      if (target.disabled) return;
+      const card = target.closest(".dash-ns-card") as HTMLElement;
+      card.querySelector<HTMLElement>(".dash-ns-view")!.style.display = "none";
+      card.querySelector<HTMLElement>(".dash-ns-edit")!.style.display = "block";
+    });
+  });
+
+  document.querySelectorAll(".edit-cancel").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const card = (e.currentTarget as HTMLElement).closest(
+        ".dash-ns-card"
+      ) as HTMLElement;
+      card.querySelector<HTMLElement>(".dash-ns-edit")!.style.display = "none";
+      card.querySelector<HTMLElement>(".dash-ns-view")!.style.display = "block";
+    });
+  });
+
+  document.querySelectorAll(".type-opt").forEach((opt) => {
+    opt.addEventListener("click", (e) => {
+      const target = e.currentTarget as HTMLElement;
+      const grid = target.closest(".type-grid")!;
+      grid.querySelectorAll(".type-opt").forEach((o) => o.classList.remove("on"));
+      target.classList.add("on");
+    });
+  });
+
+  document.querySelectorAll(".edit-save").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const target = e.currentTarget as HTMLButtonElement;
+      const card = target.closest(".dash-ns-card") as HTMLElement;
+      const slug = card.dataset.slug!;
+      const name = card.querySelector<HTMLInputElement>(".edit-name")!.value.trim();
+      const desc =
+        card.querySelector<HTMLTextAreaElement>(".edit-desc")!.value.trim() || null;
+      const typeEl = card.querySelector<HTMLElement>(".type-opt.on");
+      const type = typeEl?.dataset.type || "Other";
+
+      const errorEl = card.querySelector<HTMLElement>(".edit-error")!;
+
+      if (!name) {
+        errorEl.textContent = "project name is required";
+        errorEl.style.display = "block";
+        return;
+      }
+
+      target.textContent = "saving…";
+      target.setAttribute("disabled", "");
+      errorEl.style.display = "none";
+
+      try {
+        const res = await fetch(
+          `/api/namespaces/${encodeURIComponent(slug)}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project_name: name,
+              project_type: type,
+              description: desc,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = (data as { error: string }).error || "update failed";
+          errorEl.style.display = "block";
+          target.textContent = "save changes";
+          target.removeAttribute("disabled");
+          return;
+        }
+
+        showToast("namespace updated");
+
+        // Update the view
+        card.dataset.name = name;
+        card.dataset.type = type;
+        card.dataset.desc = desc || "";
+
+        const viewEl = card.querySelector<HTMLElement>(".dash-ns-view")!;
+        viewEl.querySelector<HTMLElement>(".dash-ns-name")!.textContent = name;
+        viewEl.querySelector<HTMLElement>(".pc-badge")!.textContent = type;
+
+        const descEl = viewEl.querySelector<HTMLElement>(".dash-ns-desc");
+        if (desc) {
+          if (descEl) {
+            descEl.textContent = desc;
+          } else {
+            const newDesc = document.createElement("div");
+            newDesc.className = "dash-ns-desc";
+            newDesc.textContent = desc;
+            viewEl.appendChild(newDesc);
+          }
+        } else if (descEl) {
+          descEl.remove();
+        }
+
+        // Update cooldown on edit button
+        const editBtn = card.querySelector<HTMLButtonElement>(".dash-edit-btn")!;
+        editBtn.textContent = "14 days until next edit";
+        editBtn.disabled = true;
+
+        // Switch back to view
+        card.querySelector<HTMLElement>(".dash-ns-edit")!.style.display = "none";
+        card.querySelector<HTMLElement>(".dash-ns-view")!.style.display = "block";
+      } catch {
+        errorEl.textContent = "network error, try again";
+        errorEl.style.display = "block";
+        target.textContent = "save changes";
+        target.removeAttribute("disabled");
+      }
+    });
+  });
+</script>

@@ -2,9 +2,10 @@
 import Layout from "../layouts/Layout.astro";
 import RegistryApp from "../components/RegistryApp";
 
-const isLoggedIn = !!Astro.locals.user;
+const user = Astro.locals.user;
+const isLoggedIn = !!user;
 ---
 
 <Layout>
-  <RegistryApp client:load isLoggedIn={isLoggedIn} />
+  <RegistryApp client:load isLoggedIn={isLoggedIn} userId={user?.id ?? null} />
 </Layout>

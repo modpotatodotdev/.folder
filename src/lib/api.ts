@@ -19,6 +19,7 @@ import {
   getRecentNamespacesWithCount,
   getUserNamespaces,
   searchNamespaces,
+  updateNamespace,
   isValidSlug,
   isValidHttpUrl,
 } from "./db";
@@ -370,6 +371,69 @@ app.post("/namespaces/:slug/urls", async (c) => {
 
   await addNamespaceUrl(c.env.DB, ns.id, body.url, user.id, await fetchGitHubStars(body.url, c.env.GITHUB_TOKEN));
   return c.json({ success: true }, 201);
+});
+
+// ── Namespace: edit namespace fields (2-week cooldown) ──
+app.patch("/namespaces/:slug", async (c) => {
+  if (hasInvalidMutationOrigin(c.req.raw)) {
+    return c.json({ error: "Invalid request origin" }, 403);
+  }
+
+  const sessionId = getSessionCookie(c.req.raw);
+  if (!sessionId) {
+    return c.json({ error: "Authentication required" }, 401);
+  }
+
+  const user = await validateSession(c.env.DB, sessionId);
+  if (!user) {
+    return c.json({ error: "Invalid session" }, 401);
+  }
+
+  const slug = c.req.param("slug").toLowerCase();
+  if (!isValidSlug(slug)) {
+    return c.json({ error: "Invalid namespace slug" }, 400);
+  }
+
+  let body: {
+    project_name?: string;
+    project_type?: string;
+    description?: string | null;
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  if (body.project_name !== undefined) {
+    if (typeof body.project_name !== "string" || !body.project_name.trim()) {
+      return c.json({ error: "Project name cannot be empty" }, 400);
+    }
+    if (body.project_name.length > 100) {
+      return c.json({ error: "Project name must be 100 characters or fewer" }, 400);
+    }
+  }
+  if (body.project_type !== undefined) {
+    if (!ALLOWED_PROJECT_TYPES.has(body.project_type)) {
+      return c.json({ error: "Invalid project type" }, 400);
+    }
+  }
+  if (body.description !== undefined) {
+    if (body.description !== null && body.description.length > 500) {
+      return c.json({ error: "Description must be 500 characters or fewer" }, 400);
+    }
+  }
+
+  const result = await updateNamespace(c.env.DB, slug, user.id, body);
+
+  if (!result.success) {
+    const status = result.error === "Namespace not found" ? 404
+      : result.error === "Not the namespace owner" ? 403
+      : 429;
+    return c.json({ error: result.error }, status);
+  }
+
+  return c.json({ success: true, last_modified_at: result.last_modified_at });
 });
 
 // ── Namespace: search ──

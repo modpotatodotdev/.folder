@@ -5,8 +5,10 @@ interface NamespaceData {
   project_name: string;
   project_type: string;
   description: string | null;
+  owner_id: string;
   owner_username?: string;
   created_at: string;
+  last_modified_at: number | null;
   urls: { url: string; submitted_by: string; github_stars: number }[];
 }
 
@@ -28,6 +30,7 @@ interface LookupResult {
 
 interface Props {
   isLoggedIn: boolean;
+  userId: string | null;
 }
 
 function cleanSlug(v: string): string {
@@ -41,7 +44,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function RegistryApp({ isLoggedIn }: Props) {
+export default function RegistryApp({ isLoggedIn, userId }: Props) {
   const [query, setQuery] = useState("");
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [view, setView] = useState<"result" | "form" | "success">("result");
@@ -67,6 +70,14 @@ export default function RegistryApp({ isLoggedIn }: Props) {
   const [addUrlValue, setAddUrlValue] = useState("");
   const [addUrlError, setAddUrlError] = useState<string | null>(null);
   const [addUrlSubmitting, setAddUrlSubmitting] = useState(false);
+
+  // Edit namespace
+  const [editMode, setEditMode] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -130,6 +141,66 @@ export default function RegistryApp({ isLoggedIn }: Props) {
     setAddUrlValue("");
     setAddUrlError(null);
   }, [isLoggedIn]);
+
+  const openEdit = useCallback(() => {
+    if (!lookupResult?.namespace) return;
+    setEditName(lookupResult.namespace.project_name);
+    setEditType(lookupResult.namespace.project_type);
+    setEditDesc(lookupResult.namespace.description || "");
+    setEditError(null);
+    setEditMode(true);
+  }, [lookupResult]);
+
+  const cancelEdit = useCallback(() => {
+    setEditMode(false);
+    setEditError(null);
+  }, []);
+
+  const submitEdit = useCallback(async () => {
+    if (!lookupResult?.slug || !editName.trim()) {
+      setEditError("Project name is required");
+      return;
+    }
+
+    setEditSubmitting(true);
+    setEditError(null);
+
+    try {
+      const res = await fetch(
+        `/api/namespaces/${encodeURIComponent(lookupResult.slug)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_name: editName.trim(),
+            project_type: editType,
+            description: editDesc.trim() || null,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setEditError((data as { error: string }).error || "Update failed");
+        setEditSubmitting(false);
+        return;
+      }
+
+      setEditMode(false);
+      // Refresh namespace data
+      const refreshRes = await fetch(
+        `/api/namespaces/${encodeURIComponent(lookupResult.slug)}`
+      );
+      const refreshData: LookupResult = await refreshRes.json();
+      setLookupResult(refreshData);
+      showToast("Namespace updated");
+    } catch {
+      setEditError("Network error. Please try again.");
+    } finally {
+      setEditSubmitting(false);
+    }
+  }, [lookupResult, editName, editType, editDesc]);
 
   const submitAddUrl = useCallback(async () => {
     if (!addUrlValue.trim()) {
@@ -360,6 +431,7 @@ export default function RegistryApp({ isLoggedIn }: Props) {
                 onClaim={openClaim}
                 onAddUrl={openAddUrl}
                 isLoggedIn={isLoggedIn}
+                userId={userId}
                 addUrlMode={addUrlMode}
                 addUrlValue={addUrlValue}
                 setAddUrlValue={setAddUrlValue}
@@ -367,6 +439,18 @@ export default function RegistryApp({ isLoggedIn }: Props) {
                 addUrlSubmitting={addUrlSubmitting}
                 onSubmitAddUrl={submitAddUrl}
                 onCancelAddUrl={() => setAddUrlMode(false)}
+                editMode={editMode}
+                editName={editName}
+                setEditName={setEditName}
+                editType={editType}
+                setEditType={setEditType}
+                editDesc={editDesc}
+                setEditDesc={setEditDesc}
+                editError={editError}
+                editSubmitting={editSubmitting}
+                onOpenEdit={openEdit}
+                onCancelEdit={cancelEdit}
+                onSubmitEdit={submitEdit}
               />
             )}
 
@@ -411,6 +495,7 @@ function ResultView({
   onClaim,
   onAddUrl,
   isLoggedIn,
+  userId,
   addUrlMode,
   addUrlValue,
   setAddUrlValue,
@@ -418,11 +503,24 @@ function ResultView({
   addUrlSubmitting,
   onSubmitAddUrl,
   onCancelAddUrl,
+  editMode,
+  editName,
+  setEditName,
+  editType,
+  setEditType,
+  editDesc,
+  setEditDesc,
+  editError,
+  editSubmitting,
+  onOpenEdit,
+  onCancelEdit,
+  onSubmitEdit,
 }: {
   result: LookupResult;
   onClaim: () => void;
   onAddUrl: () => void;
   isLoggedIn: boolean;
+  userId: string | null;
   addUrlMode: boolean;
   addUrlValue: string;
   setAddUrlValue: (v: string) => void;
@@ -430,6 +528,18 @@ function ResultView({
   addUrlSubmitting: boolean;
   onSubmitAddUrl: () => void;
   onCancelAddUrl: () => void;
+  editMode: boolean;
+  editName: string;
+  setEditName: (v: string) => void;
+  editType: string;
+  setEditType: (v: string) => void;
+  editDesc: string;
+  setEditDesc: (v: string) => void;
+  editError: string | null;
+  editSubmitting: boolean;
+  onOpenEdit: () => void;
+  onCancelEdit: () => void;
+  onSubmitEdit: () => void;
 }) {
   const ns = result.namespace;
   const taken = !result.available;
@@ -477,6 +587,17 @@ function ResultView({
               </div>
             </div>
           </div>
+
+          {/* Edit button for owner */}
+          {userId && ns?.owner_id === userId && (
+            <button
+              className="btn btn-ghost"
+              onClick={onOpenEdit}
+              style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}
+            >
+              edit namespace
+            </button>
+          )}
 
           {ns.urls && ns.urls.length > 0 && (
             <div className="url-list">
@@ -554,6 +675,72 @@ function ResultView({
                 ? "＋ add your project"
                 : "sign in to add your project"}
             </button>
+          )}
+
+          {editMode && (
+            <div className="add-url-form">
+              <div className="field">
+                <div className="field-label">project name</div>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  maxLength={100}
+                />
+              </div>
+              <div className="field">
+                <div className="field-label">project type</div>
+                <div className="type-grid">
+                  {["CLI", "MCP", "App", "SDK", "Plugin", "Other"].map((t) => (
+                    <div
+                      key={t}
+                      className={`type-opt${editType === t ? " on" : ""}`}
+                      onClick={() => setEditType(t)}
+                    >
+                      {t}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="field">
+                <div className="field-label">description</div>
+                <textarea
+                  rows={2}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  maxLength={500}
+                  placeholder="what does it store here?"
+                />
+              </div>
+              {editError && (
+                <div
+                  style={{
+                    fontSize: "0.68rem",
+                    color: "var(--red)",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  {editError}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={onSubmitEdit}
+                  disabled={editSubmitting}
+                  style={{ flex: 1 }}
+                >
+                  {editSubmitting ? "saving…" : "save changes"}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  onClick={onCancelEdit}
+                  style={{ flex: 0, minWidth: "80px" }}
+                >
+                  cancel
+                </button>
+              </div>
+            </div>
           )}
         </>
       ) : (

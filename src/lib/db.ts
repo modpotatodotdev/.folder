@@ -8,6 +8,7 @@ export interface Namespace {
   description: string | null;
   owner_id: string;
   created_at: string;
+  last_modified_at: number | null;
   owner_username?: string;
 }
 
@@ -181,6 +182,59 @@ export async function searchNamespaces(
     ...ns,
     urls: urlMap.get(ns.id) || [],
   }));
+}
+
+const TWO_WEEKS_SECONDS = 14 * 24 * 60 * 60;
+
+export async function updateNamespace(
+  db: D1Database,
+  slug: string,
+  userId: string,
+  updates: { project_name?: string; project_type?: string; description?: string | null },
+): Promise<{ success: false; error: string } | { success: true; last_modified_at: number }> {
+  const ns = await db
+    .prepare("SELECT id, owner_id, last_modified_at FROM namespaces WHERE slug = ?")
+    .bind(slug)
+    .first<{ id: string; owner_id: string; last_modified_at: number | null }>();
+
+  if (!ns) return { success: false, error: "Namespace not found" };
+  if (ns.owner_id !== userId) return { success: false, error: "Not the namespace owner" };
+
+  const now = Math.floor(Date.now() / 1000);
+  if (ns.last_modified_at !== null && now - ns.last_modified_at < TWO_WEEKS_SECONDS) {
+    const remaining = TWO_WEEKS_SECONDS - (now - ns.last_modified_at);
+    const daysLeft = Math.ceil(remaining / (24 * 60 * 60));
+    return { success: false, error: `Can edit again in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}` };
+  }
+
+  const sets: string[] = [];
+  const values: (string | number | null)[] = [];
+
+  if (updates.project_name !== undefined) {
+    sets.push("project_name = ?");
+    values.push(updates.project_name);
+  }
+  if (updates.project_type !== undefined) {
+    sets.push("project_type = ?");
+    values.push(updates.project_type);
+  }
+  if (updates.description !== undefined) {
+    sets.push("description = ?");
+    values.push(updates.description);
+  }
+
+  if (sets.length === 0) return { success: false, error: "No fields to update" };
+
+  sets.push("last_modified_at = ?");
+  values.push(now);
+  values.push(ns.id);
+
+  await db
+    .prepare(`UPDATE namespaces SET ${sets.join(", ")} WHERE id = ?`)
+    .bind(...values)
+    .run();
+
+  return { success: true, last_modified_at: now };
 }
 
 export function isValidSlug(slug: string): boolean {
