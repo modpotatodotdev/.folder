@@ -14,6 +14,9 @@
     "db:fix-slugs": "wrangler d1 execute folder-db --file=migrations/001_lowercase_slugs.sql",
     "db:fix-slugs:remote": "wrangler d1 execute folder-db --remote --file=migrations/001_lowercase_slugs.sql",
     "db:fix-slugs:local": "wrangler d1 execute folder-db --local --file=migrations/001_lowercase_slugs.sql",
+    "db:add-last-modified": "wrangler d1 execute folder-db --file=migrations/002_add_last_modified_at.sql",
+    "db:add-last-modified:remote": "wrangler d1 execute folder-db --remote --file=migrations/002_add_last_modified_at.sql",
+    "db:add-last-modified:local": "wrangler d1 execute folder-db --local --file=migrations/002_add_last_modified_at.sql",
     "staging": "npm run build && wrangler dev --env staging --assets ./dist --script ./dist/_worker.js/index.js"
   },
   "dependencies": {
