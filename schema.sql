@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS oauth_accounts (
   provider TEXT NOT NULL,
   provider_user_id TEXT NOT NULL,
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  access_token TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (provider, provider_user_id)
 );

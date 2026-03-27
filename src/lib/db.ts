@@ -242,17 +242,34 @@ export function isValidSlug(slug: string): boolean {
   return /^[a-z0-9][a-z0-9_\-.]{0,63}$/.test(slug);
 }
 
+const PRIVATE_IP_RANGES = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2[0-9]|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^::1$/,
+  /^\[::1\]$/,
+  /^fc00:/,
+  /^fe80:/,
+  /^0:/,
+];
+
+export function isPrivateIP(hostname: string): boolean {
+  if (hostname === "localhost") return true;
+  for (const pattern of PRIVATE_IP_RANGES) {
+    if (pattern.test(hostname)) return true;
+  }
+  return false;
+}
+
 export function isValidHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
     if (url.protocol === "https:") return true;
     if (url.protocol === "http:") {
-      return (
-        url.hostname === "localhost" ||
-        url.hostname === "127.0.0.1" ||
-        url.hostname === "::1" ||
-        url.hostname === "[::1]"
-      );
+      const hostname = url.hostname;
+      return !isPrivateIP(hostname);
     }
     return false;
   } catch {

@@ -22,13 +22,13 @@ import {
   updateNamespace,
   isValidSlug,
   isValidHttpUrl,
+  isPrivateIP,
 } from "./db";
 
 type Bindings = {
   DB: D1Database;
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
-  SESSION_SECRET: string;
   GITHUB_TOKEN?: string;
 };
 
@@ -38,6 +38,41 @@ const app = new Hono<{ Bindings: Bindings }>().basePath("/api");
 
 const MAX_SEARCH_QUERY_LENGTH = 100;
 const ALLOWED_PROJECT_TYPES = new Set(["CLI", "MCP", "App", "SDK", "Plugin", "Other"]);
+const MAX_BODY_SIZE = 10 * 1024;
+
+const rateLimitStore = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 100;
+
+function rateLimit(ip: string): { allowed: boolean; remaining: number; reset: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW) {
+    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, reset: RATE_LIMIT_WINDOW };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    const resetTime = entry.windowStart + RATE_LIMIT_WINDOW - now;
+    return { allowed: false, remaining: 0, reset: resetTime };
+  }
+
+  entry.count++;
+  return {
+    allowed: true,
+    remaining: RATE_LIMIT_MAX_REQUESTS - entry.count,
+    reset: entry.windowStart + RATE_LIMIT_WINDOW - now
+  };
+}
+
+function getClientIP(request: Request): string {
+  const cfIP = request.headers.get("CF-Connecting-IP");
+  if (cfIP) return cfIP.split(",")[0].trim();
+  return request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
+    request.headers.get("X-Real-IP") ||
+    "unknown";
+}
 
 function hasInvalidMutationOrigin(request: Request): boolean {
   const method = request.method.toUpperCase();
@@ -78,6 +113,40 @@ async function fetchGitHubStars(url: string, token?: string): Promise<number> {
 }
 
 app.use("*", async (c, next) => {
+  const clientIP = getClientIP(c.req.raw);
+  const { allowed, remaining, reset } = rateLimit(clientIP);
+
+  c.res.headers.set("X-RateLimit-Limit", String(RATE_LIMIT_MAX_REQUESTS));
+  c.res.headers.set("X-RateLimit-Remaining", String(remaining));
+  c.res.headers.set("X-RateLimit-Reset", String(reset));
+
+  if (!allowed) {
+    return c.json({ error: "Rate limit exceeded. Try again later." }, 429, {
+      "Retry-After": String(Math.ceil(reset / 1000)),
+    });
+  }
+
+  const origin = c.req.header("Origin");
+  const allowedOrigins = ["https://dotfolder.xyz", "http://localhost:4321"];
+  if (origin && allowedOrigins.includes(origin)) {
+    c.res.headers.set("Access-Control-Allow-Origin", origin);
+    c.res.headers.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+    c.res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    c.res.headers.set("Access-Control-Allow-Credentials", "true");
+    c.res.headers.set("Access-Control-Max-Age", "86400");
+  }
+
+  if (c.req.method === "OPTIONS") {
+    return new Response(null, { status: 204 });
+  }
+
+  if (["POST", "PUT", "PATCH"].includes(c.req.method)) {
+    const contentLength = c.req.header("content-length");
+    if (contentLength && parseInt(contentLength) > MAX_BODY_SIZE) {
+      return c.json({ error: "Request body too large" }, 413);
+    }
+  }
+
   await next();
   c.res.headers.set("X-Content-Type-Options", "nosniff");
   c.res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -87,8 +156,9 @@ app.use("*", async (c, next) => {
   c.res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), hid=()");
   c.res.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https://avatars.githubusercontent.com; connect-src 'self'; frame-ancestors 'none'",
+    "default-src 'none'; frame-ancestors 'none'",
   );
+  c.res.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 });
 
 // ── Auth: start GitHub OAuth ──
@@ -317,7 +387,7 @@ app.post("/namespaces", async (c) => {
     if (message.includes("UNIQUE") || message.includes("unique") || message.includes("constraint")) {
       return c.json({ error: "Namespace already claimed" }, 409);
     }
-    throw err;
+    return c.json({ error: "Internal server error" }, 500);
   }
 });
 

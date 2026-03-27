@@ -130,7 +130,6 @@ export async function findOrCreateUser(
     return existing.user_id;
   }
 
-  // Create new user + oauth account
   const userId = generateId();
   await db.batch([
     db
@@ -140,9 +139,9 @@ export async function findOrCreateUser(
       .bind(userId, username, displayName, avatarUrl),
     db
       .prepare(
-        "INSERT INTO oauth_accounts (provider, provider_user_id, user_id, access_token) VALUES (?, ?, ?, ?)",
+        "INSERT INTO oauth_accounts (provider, provider_user_id, user_id) VALUES (?, ?, ?)",
       )
-      .bind(provider, providerUserId, userId, null),
+      .bind(provider, providerUserId, userId),
   ]);
   return userId;
 }
